@@ -4,6 +4,8 @@ let selectedElement = false;
 let CONSTANTS = {
     path: "path"
 }
+const NODE_RADIUS = 4;
+const START_SHIFT = 7;
 
 let graph = {
     0: {
@@ -67,11 +69,31 @@ function buildNode(svg, id) {
         class: "draggable",
         cx: node.coords.x,
         cy: node.coords.y,
-        r: 4,
+        r: NODE_RADIUS,
         stroke: "black",
         stroke_width: 0.1,
         fill: "white"
     }));
+    if (node.attribute == "end") {
+        container.appendChild(getNode("circle", {
+            class: "draggable",
+            cx: node.coords.x,
+            cy: node.coords.y,
+            r: NODE_RADIUS - 0.3,
+            stroke: "black",
+            stroke_width: 0.1,
+            fill: "white"
+        }));
+    }
+    if (node.attribute == "start") {
+        let dValue = `M${node.coords.x - NODE_RADIUS - START_SHIFT} ${node.coords.y} L${node.coords.x} ${node.coords.y}`;
+        svg.appendChild(getNode('path', { 
+            id: `start_${id}`,
+            d: dValue, 
+            stroke: "black", 
+            stroke_width: 0.1
+        }));
+    }
 
     // create the text
     let textNode = getNode("text", {
@@ -156,10 +178,19 @@ function makeDraggable(evt) {
             }
             
             // move the text and the circle
-            selectedElement.childNodes[0].setAttributeNS(null, "cx", coord.x);
-            selectedElement.childNodes[0].setAttributeNS(null, "cy", coord.y);
-            selectedElement.childNodes[1].setAttributeNS(null, "x", coord.x);
-            selectedElement.childNodes[1].setAttributeNS(null, "y", coord.y);
+            for (let child of selectedElement.childNodes) {
+                child.setAttributeNS(null, child.tagName == "circle" ? "cx" : "x", coord.x);
+                child.setAttributeNS(null, child.tagName == "circle" ? "cy" : "y", coord.y);
+            }
+
+            // change the path of start
+            if (graph[id].attribute == "start") {
+                const selector = `start_${id}`;
+                const path = document.getElementById(selector);
+
+                const dValue = `M${graph[id].coords.x - NODE_RADIUS - START_SHIFT} ${graph[id].coords.y} L${graph[id].coords.x} ${graph[id].coords.y}`;
+                path.setAttributeNS(null, "d", dValue);
+            }
 
             graph[id].coords = coord;
 
