@@ -8,6 +8,7 @@ let CONSTANTS = {
 let graph = {
     0: {
         desc: "q0",
+        attribute: "start",
         coords: {
             x: 30,
             y: 50
@@ -21,6 +22,7 @@ let graph = {
     },
     1: {
         desc: "q1",
+        attribute: "end",
         coords: {
             x: 70,
             y: 50
@@ -137,11 +139,19 @@ function makeDraggable(evt) {
             // prevent going over the edge
             let freezeX = coord.x > 96 || coord.x < 4;
             let freezeY = coord.y > 96 || coord.y < 4;
-            // TODO: check if nodes overlap and prevent it
-            if (freezeX) {
+
+            // prevent overlapping nodes
+            let distance;
+            for (let nodeId in graph) {
+                if (nodeId == id) continue;
+                
+                distance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+            }
+            if (freezeX || distance < 8) {
                 coord.x = graph[id].coords.x;
             }
-            if (freezeY) {
+
+            if (freezeY || distance < 8) {
                 coord.y = graph[id].coords.y;
             }
             
