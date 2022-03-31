@@ -47,6 +47,30 @@ function buildSVG(svg) {
     // removes content of svg
     svg.innerHTML = "";
 
+    // make some defs for the arrowheads later
+    /*
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+    refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+    */
+    const defs = getNode("defs", {});
+    const marker = getNode("marker", {
+        id: "startarrow", 
+        markerWidth: 16,
+        markerHeight: 10,
+        refX: 16 + 10 * NODE_RADIUS - 1,
+        refY: 5,
+        orient: "auto"
+    });
+    const polygon = getNode("polygon", {
+        points: "0 0, 16 5, 0 10"
+    });
+    marker.appendChild(polygon);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    console.log(svg);
+
     // render the lines first
     for (let node in graph) {
         buildLines(svg, node);
@@ -81,7 +105,8 @@ function buildNode(svg, id) {
             class: "draggable",
             d: dValue,
             stroke: "black",
-            stroke_width: 0.1
+            stroke_width: 0.1,
+            marker_end: "url(#startarrow)"
         }));
 
         container.appendChild(startContainer);
@@ -119,7 +144,7 @@ function buildNode(svg, id) {
     });
     textNode.innerHTML = node.desc;
     container.appendChild(textNode);
-
+    
     svg.appendChild(container);
 }
 
@@ -244,6 +269,7 @@ function makeDraggable(evt) {
         }
 
         // change the path of start
+        // TODO: Bug - edge of window make the path shrink
         if (graph[id].attribute == "start") {
             const selector = `start_${id}`;
             const pathContainer = document.getElementById(selector);
