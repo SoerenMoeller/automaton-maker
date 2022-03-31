@@ -163,7 +163,7 @@ function buildLines(svg, id) {
         // only straight lines for now
         const dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
         //const dValue = `M${coords.x} ${coords.y} Q${50} ${30} ${otherCoords.x} ${otherCoords.y}`;
-        console.log(dValue);
+        
         pathContainer.appendChild(getNode('path', {
             d: dValue,
             stroke: "transparent",
@@ -264,11 +264,28 @@ function makeDraggable(evt) {
         const ids = selectedElement.id.split("_")[1];
         const startId = ids.split("-")[0];
         const endId =  ids.split("-")[1];
-
-        console.log(startId, endId);
         
         // TODO: get the coords of the nodes, make an orthonal vector to them and determine the length of it by the mouse input
         // if the length is below a given threshold, snap it into a straight position
+        const startNode = graph[startId];
+        const endNode = graph[endId];
+        const middle = {
+            x: (startNode.coords.x + endNode.coords.x) / 2,
+            y: (startNode.coords.y + endNode.coords.y) / 2
+        }
+
+        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+
+        // determine distance to mouse 
+        const dist = getDistance(coord, middle);
+        console.log(dist);
+
+        const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
+        for (let child of selectedElement.childNodes) {
+            if (child.tagName == "path") {
+                child.setAttributeNS(null, "d", dValue);
+            }
+        }
     }
 
     function dragStart(coord) {
@@ -413,4 +430,12 @@ function correctPaths(pathList, id, to) {
             }
         }
     }
+}
+
+function getDistance(coord, otherCoord) {
+    let direction = -1;
+    if (coord.x * otherCoord.y - otherCoord.x * coord.y) {
+        direction = 1;
+    }
+    return direction * Math.sqrt(Math.pow(otherCoord.x - coord.x, 2) + Math.pow(otherCoord.y - coord.y, 2));
 }
