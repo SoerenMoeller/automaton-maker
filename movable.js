@@ -156,15 +156,26 @@ function buildLines(svg, id) {
         let nodeId = node.to[otherNode].node;
         let otherCoords = graph[nodeId].coords;
 
-        // TODO: make a thicker (invis) one, to have a bigger clicking area
-        // make a path (straight only for now)
-        dv = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
-        svg.appendChild(getNode('path', {
-            id: `path_${id}-${nodeId}`,
-            d: dv,
+        const pathContainer = getNode("g", {
+            id: `path_${id}-${nodeId}`
+        })
+    
+        // only straight lines for now
+        const dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
+        pathContainer.appendChild(getNode('path', {
+            d: dValue,
+            stroke: "transparent",
+            stroke_width: 1
+        }));
+        pathContainer.appendChild(getNode('path', {
+            d: dValue,
             stroke: "black",
             stroke_width: 0.1
         }));
+
+        // append the text in the middle of the node
+
+        svg.appendChild(pathContainer);
     }
 }
 
@@ -326,7 +337,12 @@ function makeDraggable(evt) {
             const startNode = graph[id];
             const endNode = graph[nodeId];
             const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-            path.setAttributeNS(null, "d", dValue);
+
+            for (const child of path.childNodes) {
+                if (child.tagName == "path") {
+                    child.setAttributeNS(null, "d", dValue);
+                }
+            }
         }
 
         for (let nodeId of pathFrom) {
@@ -338,7 +354,12 @@ function makeDraggable(evt) {
             const startNode = graph[nodeId];
             const endNode = graph[id];
             const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-            path.setAttributeNS(null, "d", dValue);
+            
+            for (const child of path.childNodes) {
+                if (child.tagName == "path") {
+                    child.setAttributeNS(null, "d", dValue);
+                }
+            }
         }
     }
 
