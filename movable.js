@@ -189,7 +189,29 @@ function makeDraggable(evt) {
     }
 
     function dragStart(coord) {
-        console.log("start moving");
+        // get the id of the node
+        const id = selectedElement.id.split("_")[1];
+        const node = graph[id];
+
+        // get vector to the new coords
+        let vector = {
+            x: coord.x - node.coords.x,
+            y: coord.y - node.coords.y
+        };
+
+        // normalize the vector
+        const length = Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+        vector.x /= length;
+        vector.y /= length;
+
+        // make the vector the desired length
+        vector.x *= (NODE_RADIUS + START_SHIFT);
+        vector.y *= (NODE_RADIUS + START_SHIFT);
+
+        // adapt the line
+        const dValue = `M${node.coords.x + vector.x} ${node.coords.y + vector.y} L${node.coords.x} ${node.coords.y}`;
+        selectedElement.childNodes[0].setAttributeNS(null, "d", dValue);
+        selectedElement.childNodes[1].setAttributeNS(null, "d", dValue);
     }
 
     function dragNode(coord) {
@@ -197,8 +219,8 @@ function makeDraggable(evt) {
         const id = selectedElement.id.split("_")[1];
 
         // prevent going over the edge
-        let freezeX = coord.x > 96 || coord.x < 4;
-        let freezeY = coord.y > 96 || coord.y < 4;
+        let freezeX = coord.x > 100 - NODE_RADIUS || coord.x < NODE_RADIUS;
+        let freezeY = coord.y > 100 - NODE_RADIUS || coord.y < NODE_RADIUS;
 
         // prevent overlapping nodes
         let distance;
@@ -207,11 +229,11 @@ function makeDraggable(evt) {
 
             distance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
         }
-        if (freezeX || distance < 8) {
+        if (freezeX || distance < 2 * NODE_RADIUS) {
             coord.x = graph[id].coords.x;
         }
 
-        if (freezeY || distance < 8) {
+        if (freezeY || distance < 2 * NODE_RADIUS) {
             coord.y = graph[id].coords.y;
         }
 
@@ -226,9 +248,23 @@ function makeDraggable(evt) {
             const selector = `start_${id}`;
             const pathContainer = document.getElementById(selector);
 
-            //let val = path.getAttributeNS(null, "d");
-            //console.log(val);
-            const dValue = `M${graph[id].coords.x - NODE_RADIUS - START_SHIFT} ${graph[id].coords.y} L${graph[id].coords.x} ${graph[id].coords.y}`;
+            // get the current coordinates
+            const dCurrent = pathContainer.firstChild.getAttributeNS(null, "d").split(" ");
+            const currentCoords = {
+                xFrom: parseInt(dCurrent[0].split("M")[1]),
+                yFrom: parseInt(dCurrent[1]),
+                xTo: parseInt(dCurrent[2].split("L")[1]),
+                yTo: parseInt(dCurrent[3])
+            };
+
+            // get the offset of the node position
+            const offset = {
+                xOffset: coord.x - currentCoords.xTo,
+                yOffset: coord.y - currentCoords.yTo
+            }
+
+            // correct the path
+            const dValue = `M${currentCoords.xFrom + offset.xOffset} ${currentCoords.yFrom + offset.yOffset} L${coord.x} ${coord.y}`;
             pathContainer.childNodes[0].setAttributeNS(null, "d", dValue);
             pathContainer.childNodes[1].setAttributeNS(null, "d", dValue);
         }
