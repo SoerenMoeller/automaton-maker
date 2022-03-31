@@ -7,6 +7,12 @@
     <title>Document</title>
 
     <style type="text/css">
+        body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
         text { 
             font: italic 4px sans-serif; 
             user-select: none;
@@ -22,9 +28,11 @@
         }
 
         svg {
-            width: 100vmin;
-            height: 100vmin;
-            background-color: lightblue;
+            width: 90vmin;
+            height: 90vmin;
+            background-color: rgb(235, 235, 235);
+            border: 0.2rem solid rgb(163, 192, 246);
+            border-radius: 1rem;
         }
     </style>
 
@@ -53,7 +61,7 @@
       
         <!-- Render the lines first, so they're under the nodes -->
         <!--
-        <path d="M30 50 Q50 30 70 50" stroke="black" stroke-width="0.1"  fill="none" marker-end="url(#arrow_up)" />
+        <path d="M30 50 Q50 30 70 50" stroke="black" stroke-width="0.1"  fill="none"" />
         <path d="M30 50 Q50 70 70 50" stroke="black" stroke-width="0.1"  fill="none" marker-end="url(#arrow_down)" />
         <path d="M30 50 L70 50" stroke="black" stroke-width="0.1"  fill="none" marker-end="url(#arrow_normal)" />
         
@@ -66,7 +74,6 @@
           <text class="draggable" x="70" y="50" text-anchor="middle" alignment-baseline="central">q<tspan baseline-shift="sub">1</tspan></text>
         </g>
         -->
-        
       </svg>
 </body>
 </html>

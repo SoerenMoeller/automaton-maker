@@ -18,7 +18,7 @@ let graph = {
         to: [
             {
                 node: 1,
-                desc: ""
+                desc: "a"
             }
         ]
     },
@@ -56,7 +56,7 @@ function buildSVG(svg) {
     */
     const defs = getNode("defs", {});
     const marker = getNode("marker", {
-        id: "startarrow", 
+        id: "startarrow",
         markerWidth: 16,
         markerHeight: 10,
         refX: 16 + 10 * NODE_RADIUS - 1,
@@ -144,7 +144,7 @@ function buildNode(svg, id) {
     });
     textNode.innerHTML = node.desc;
     container.appendChild(textNode);
-    
+
     svg.appendChild(container);
 }
 
@@ -159,23 +159,55 @@ function buildLines(svg, id) {
         const pathContainer = getNode("g", {
             id: `path_${id}-${nodeId}`
         })
-    
+
         // only straight lines for now
         const dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
+        //const dValue = `M${coords.x} ${coords.y} Q${50} ${30} ${otherCoords.x} ${otherCoords.y}`;
+        console.log(dValue);
         pathContainer.appendChild(getNode('path', {
             d: dValue,
             stroke: "transparent",
-            stroke_width: 1
+            stroke_width: 1,
+            fill: "none",
+            class: "draggable"
         }));
         pathContainer.appendChild(getNode('path', {
             d: dValue,
             stroke: "black",
-            stroke_width: 0.1
+            stroke_width: 0.1,
+            marker_end: "url(#startarrow)",
+            fill: "none",
+            class: "draggable"
         }));
 
         // append the text in the middle of the node
+        const normalVector = getUnitVector(getNormalVector(node.coords, otherCoords));
+        const offset = -2;
+        const label = getNode("text", {
+            x: (node.coords.x + otherCoords.x) / 2 + normalVector.x * offset,
+            y: (node.coords.y + otherCoords.y) / 2 + normalVector.y * offset,
+            text_anchor: "middle",
+            alignment_baseline: "central"
+        });
+        label.innerHTML = node.to[otherNode].desc;
+        pathContainer.appendChild(label);
 
         svg.appendChild(pathContainer);
+    }
+}
+
+function getNormalVector(coord, otherCoord) {
+    return {
+        x: -(otherCoord.y - coord.y),
+        y: otherCoord.x - coord.x
+    }
+}
+
+function getUnitVector(vector) {
+    const length = Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+    return {
+        x: vector.x / length,
+        y: vector.y / length,
     }
 }
 
@@ -218,10 +250,25 @@ function makeDraggable(evt) {
                 case "start":
                     dragStart(coord);
                     break;
+                case "path":
+                    dragPath(coord);
+                    break;
                 default:
                     console.error("unknown dragging type");
             }
         }
+    }
+
+    function dragPath(coord) {
+        // get the id of the node
+        const ids = selectedElement.id.split("_")[1];
+        const startId = ids.split("-")[0];
+        const endId =  ids.split("-")[1];
+
+        console.log(startId, endId);
+        
+        // TODO: get the coords of the nodes, make an orthonal vector to them and determine the length of it by the mouse input
+        // if the length is below a given threshold, snap it into a straight position
     }
 
     function dragStart(coord) {
@@ -235,10 +282,7 @@ function makeDraggable(evt) {
             y: coord.y - node.coords.y
         };
 
-        // normalize the vector
-        const length = Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
-        vector.x /= length;
-        vector.y /= length;
+        vector = getUnitVector(vector);
 
         // make the vector the desired length
         vector.x *= (NODE_RADIUS + START_SHIFT);
@@ -328,39 +372,8 @@ function makeDraggable(evt) {
         }
 
         // correct the paths
-        for (let nodeId of pathTo) {
-            // get the svg path
-            const selector = `path_${id}-${nodeId}`;
-            const path = document.getElementById(selector);
-
-            // redraw the path
-            const startNode = graph[id];
-            const endNode = graph[nodeId];
-            const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-
-            for (const child of path.childNodes) {
-                if (child.tagName == "path") {
-                    child.setAttributeNS(null, "d", dValue);
-                }
-            }
-        }
-
-        for (let nodeId of pathFrom) {
-            // get the svg path
-            const selector = `path_${nodeId}-${id}`;
-            const path = document.getElementById(selector);
-
-            // redraw the path
-            const startNode = graph[nodeId];
-            const endNode = graph[id];
-            const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-            
-            for (const child of path.childNodes) {
-                if (child.tagName == "path") {
-                    child.setAttributeNS(null, "d", dValue);
-                }
-            }
-        }
+        correctPaths(pathTo, id, true);
+        correctPaths(pathFrom, id, false);
     }
 
     function endDrag(evt) {
@@ -373,5 +386,31 @@ function makeDraggable(evt) {
             x: (evt.clientX - CTM.e) / CTM.a,
             y: (evt.clientY - CTM.f) / CTM.d
         };
+    }
+}
+
+function correctPaths(pathList, id, to) {
+    for (let nodeId of pathList) {
+        // get the svg path
+        const selector = `path_${to ? id : nodeId}-${to ? nodeId : id}`;
+        const path = document.getElementById(selector);
+
+        // redraw the path
+        const startNode = graph[to ? id : nodeId];
+        const endNode = graph[to ? nodeId : id];
+        const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
+
+        for (const child of path.childNodes) {
+            if (child.tagName == "path") {
+                child.setAttributeNS(null, "d", dValue);
+            }
+
+            // redraw the label
+            if (child.tagName == "text") {
+                const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+                child.setAttributeNS(null, "x", (endNode.coords.x + startNode.coords.x) / 2 + normalVector.x * 2);
+                child.setAttributeNS(null, "y", (endNode.coords.y + startNode.coords.y) / 2 + normalVector.y * 2);
+            }
+        }
     }
 }

@@ -5,10 +5,10 @@ In general, NFAs, DFAs and TMs should be supported.
 The functionality for labels could be added, to support LTS's.
 
 ## Current state
-- No arrowheads yet
-- No labels on nodes/paths yet
+- No labels on nodes yet
 - only straight paths possible yet
-- Moving of the start-arrows is not possible yet
+- arrows my have some offset
 
 ## Hot features to come
-1. Convert the automaton into LaTeX-Code
+- Convert the automaton into LaTeX-Code
+- Convert the automaton into img-File
