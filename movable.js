@@ -39,7 +39,7 @@ function main() {
     elements = document.getElementsByTagName("svg");
     console.assert(elements.length > 0, "svg not found");
     svg = elements[0]
-    
+
     buildSVG(svg);
 }
 
@@ -64,6 +64,29 @@ function buildNode(svg, id) {
         id: `node_${id}`
     });
 
+    // create starting arrow
+    if (node.attribute == "start") {
+        const dValue = `M${node.coords.x - NODE_RADIUS - START_SHIFT} ${node.coords.y} L${node.coords.x} ${node.coords.y}`;
+        // make a thick invis line, to be able to click it nicely
+        const startContainer = getNode("g", {
+            id: `start_${id}`
+        })
+        startContainer.appendChild(getNode('path', {
+            class: "draggable",
+            d: dValue,
+            stroke: "transparent",
+            stroke_width: 1
+        }));
+        startContainer.appendChild(getNode('path', {
+            class: "draggable",
+            d: dValue,
+            stroke: "black",
+            stroke_width: 0.1
+        }));
+
+        container.appendChild(startContainer);
+    }
+
     // create the circle
     container.appendChild(getNode("circle", {
         class: "draggable",
@@ -85,15 +108,6 @@ function buildNode(svg, id) {
             fill: "white"
         }));
     }
-    if (node.attribute == "start") {
-        let dValue = `M${node.coords.x - NODE_RADIUS - START_SHIFT} ${node.coords.y} L${node.coords.x} ${node.coords.y}`;
-        svg.appendChild(getNode('path', { 
-            id: `start_${id}`,
-            d: dValue, 
-            stroke: "black", 
-            stroke_width: 0.1
-        }));
-    }
 
     // create the text
     let textNode = getNode("text", {
@@ -103,7 +117,6 @@ function buildNode(svg, id) {
         text_anchor: "middle",
         alignment_baseline: "central"
     });
-
     textNode.innerHTML = node.desc;
     container.appendChild(textNode);
 
@@ -118,12 +131,13 @@ function buildLines(svg, id) {
         let nodeId = node.to[otherNode].node;
         let otherCoords = graph[nodeId].coords;
 
+        // TODO: make a thicker (invis) one, to have a bigger clicking area
         // make a path (straight only for now)
         dv = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
-        svg.appendChild(getNode('path', { 
+        svg.appendChild(getNode('path', {
             id: `path_${id}-${nodeId}`,
-            d: dv, 
-            stroke: "black", 
+            d: dv,
+            stroke: "black",
             stroke_width: 0.1
         }));
     }
@@ -132,7 +146,7 @@ function buildLines(svg, id) {
 function getNode(n, v) {
     n = document.createElementNS("http://www.w3.org/2000/svg", n);
     for (var p in v) {
-      n.setAttributeNS(null, p.replace("_", "-"), v[p]);
+        n.setAttributeNS(null, p.replace("_", "-"), v[p]);
     }
     return n
 }
@@ -146,7 +160,12 @@ function makeDraggable(evt) {
 
     function startDrag(evt) {
         if (evt.target.classList.contains('draggable')) {
-            selectedElement = evt.target.parentNode;
+            const parent = evt.target.parentNode;
+            if (parent && parent.tagName == "g") {
+                selectedElement = parent;
+            } else {
+                console.error("Wrong element clickable");
+            }
         }
     }
 
@@ -154,89 +173,110 @@ function makeDraggable(evt) {
         if (selectedElement) {
             evt.preventDefault();
             const coord = getMousePosition(evt);
+            const prefix = selectedElement.id.split("_")[0];
 
-            // get the id of the node
-            const id = selectedElement.id.split("_")[1];
-
-            // prevent going over the edge
-            let freezeX = coord.x > 96 || coord.x < 4;
-            let freezeY = coord.y > 96 || coord.y < 4;
-
-            // prevent overlapping nodes
-            let distance;
-            for (let nodeId in graph) {
-                if (nodeId == id) continue;
-                
-                distance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+            switch (prefix) {
+                case "node":
+                    dragNode(coord);
+                    break;
+                case "start":
+                    dragStart(coord);
+                    break;
+                default:
+                    console.error("unknown dragging type");
             }
-            if (freezeX || distance < 8) {
-                coord.x = graph[id].coords.x;
-            }
+        }
+    }
 
-            if (freezeY || distance < 8) {
-                coord.y = graph[id].coords.y;
-            }
-            
-            // move the text and the circle
-            for (let child of selectedElement.childNodes) {
-                child.setAttributeNS(null, child.tagName == "circle" ? "cx" : "x", coord.x);
-                child.setAttributeNS(null, child.tagName == "circle" ? "cy" : "y", coord.y);
-            }
+    function dragStart(coord) {
+        console.log("start moving");
+    }
 
-            // change the path of start
-            if (graph[id].attribute == "start") {
-                const selector = `start_${id}`;
-                const path = document.getElementById(selector);
+    function dragNode(coord) {
+        // get the id of the node
+        const id = selectedElement.id.split("_")[1];
 
-                const dValue = `M${graph[id].coords.x - NODE_RADIUS - START_SHIFT} ${graph[id].coords.y} L${graph[id].coords.x} ${graph[id].coords.y}`;
-                path.setAttributeNS(null, "d", dValue);
-            }
+        // prevent going over the edge
+        let freezeX = coord.x > 96 || coord.x < 4;
+        let freezeY = coord.y > 96 || coord.y < 4;
 
-            graph[id].coords = coord;
+        // prevent overlapping nodes
+        let distance;
+        for (let nodeId in graph) {
+            if (nodeId == id) continue;
 
-            // get all paths from current node
-            const pathTo = [];
-            let paths = graph[id].to;
-            for (let elem in paths) {
-                pathTo.push(paths[elem].node);
-            }
-            
-            // collect all paths into the current node
-            const pathFrom = [];
-            for (let nodeId in graph) {
-                let to = graph[nodeId].to;
-                for (let otherNode in to) {
-                    let otherId = to[otherNode].node;
-                    if (otherId == id) {
-                        pathFrom.push(parseInt(nodeId));
-                    }
+            distance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+        }
+        if (freezeX || distance < 8) {
+            coord.x = graph[id].coords.x;
+        }
+
+        if (freezeY || distance < 8) {
+            coord.y = graph[id].coords.y;
+        }
+
+        // move the text and the circle
+        for (let child of selectedElement.childNodes) {
+            child.setAttributeNS(null, child.tagName == "circle" ? "cx" : "x", coord.x);
+            child.setAttributeNS(null, child.tagName == "circle" ? "cy" : "y", coord.y);
+        }
+
+        // change the path of start
+        if (graph[id].attribute == "start") {
+            const selector = `start_${id}`;
+            const pathContainer = document.getElementById(selector);
+
+            //let val = path.getAttributeNS(null, "d");
+            //console.log(val);
+            const dValue = `M${graph[id].coords.x - NODE_RADIUS - START_SHIFT} ${graph[id].coords.y} L${graph[id].coords.x} ${graph[id].coords.y}`;
+            pathContainer.childNodes[0].setAttributeNS(null, "d", dValue);
+            pathContainer.childNodes[1].setAttributeNS(null, "d", dValue);
+        }
+
+        graph[id].coords = coord;
+
+        // get all paths from current node
+        const pathTo = [];
+        let paths = graph[id].to;
+        for (let elem in paths) {
+            pathTo.push(paths[elem].node);
+        }
+
+        // collect all paths into the current node
+        const pathFrom = [];
+        for (let nodeId in graph) {
+            let to = graph[nodeId].to;
+            for (let otherNode in to) {
+                let otherId = to[otherNode].node;
+                if (otherId == id) {
+                    pathFrom.push(parseInt(nodeId));
                 }
             }
+        }
 
-            // correct the paths
-            for (let nodeId of pathTo) {
-                // get the svg path
-                const selector = `path_${id}-${nodeId}`;
-                const path = document.getElementById(selector);
+        // correct the paths
+        for (let nodeId of pathTo) {
+            // get the svg path
+            const selector = `path_${id}-${nodeId}`;
+            const path = document.getElementById(selector);
 
-                // redraw the path
-                const startNode = graph[id];
-                const endNode = graph[nodeId];
-                const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-                path.setAttributeNS(null, "d", dValue);
-            }
+            // redraw the path
+            const startNode = graph[id];
+            const endNode = graph[nodeId];
+            const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
+            path.setAttributeNS(null, "d", dValue);
+        }
 
-            for (let nodeId of pathFrom) {
-                // get the svg path
-                const selector = `path_${nodeId}-${id}`;
-                const path = document.getElementById(selector);
+        for (let nodeId of pathFrom) {
+            // get the svg path
+            const selector = `path_${nodeId}-${id}`;
+            const path = document.getElementById(selector);
 
-                // redraw the path
-                const startNode = graph[nodeId];
-                const endNode = graph[id];
-                const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
-                path.setAttributeNS(null, "d", dValue);
-            }
+            // redraw the path
+            const startNode = graph[nodeId];
+            const endNode = graph[id];
+            const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
+            path.setAttributeNS(null, "d", dValue);
         }
     }
 
@@ -247,8 +287,8 @@ function makeDraggable(evt) {
     function getMousePosition(evt) {
         var CTM = svg.getScreenCTM();
         return {
-          x: (evt.clientX - CTM.e) / CTM.a,
-          y: (evt.clientY - CTM.f) / CTM.d
+            x: (evt.clientX - CTM.e) / CTM.a,
+            y: (evt.clientY - CTM.f) / CTM.d
         };
     }
 }
