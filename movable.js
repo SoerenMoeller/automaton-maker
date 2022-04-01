@@ -6,6 +6,7 @@ let CONSTANTS = {
 }
 const NODE_RADIUS = 4;
 const START_SHIFT = 7;
+const THRESHOLD = 2;
 
 let graph = {
     0: {
@@ -18,7 +19,9 @@ let graph = {
         to: [
             {
                 node: 1,
-                desc: "a"
+                desc: "a",
+                offset: 0,
+                textOffset: -2
             }
         ]
     },
@@ -47,13 +50,7 @@ function buildSVG(svg) {
     // removes content of svg
     svg.innerHTML = "";
 
-    // make some defs for the arrowheads later
-    /*
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-    refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" />
-    </marker>
-    */
+    // make the arrowhead
     const defs = getNode("defs", {});
     const marker = getNode("marker", {
         id: "startarrow",
@@ -160,9 +157,8 @@ function buildLines(svg, id) {
             id: `path_${id}-${nodeId}`
         })
 
-        // only straight lines for now
+        // initially the lines are straight
         const dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
-        //const dValue = `M${coords.x} ${coords.y} Q${50} ${30} ${otherCoords.x} ${otherCoords.y}`;
         
         pathContainer.appendChild(getNode('path', {
             d: dValue,
@@ -182,10 +178,11 @@ function buildLines(svg, id) {
 
         // append the text in the middle of the node
         const normalVector = getUnitVector(getNormalVector(node.coords, otherCoords));
-        const offset = -2;
+        const middle = getMiddleOfVector(node.coords, otherCoords);
+        const offset = node.to.find(e => e.node == nodeId).textOffset;
         const label = getNode("text", {
-            x: (node.coords.x + otherCoords.x) / 2 + normalVector.x * offset,
-            y: (node.coords.y + otherCoords.y) / 2 + normalVector.y * offset,
+            x: middle.x + normalVector.x * offset,
+            y: middle.y + normalVector.y * offset,
             text_anchor: "middle",
             alignment_baseline: "central"
         });
@@ -196,6 +193,10 @@ function buildLines(svg, id) {
     }
 }
 
+function getDotProduct(vectorA, vectorB) {
+    return vectorA.x * vectorB.y - vectorB.x * vectorA.y;
+}
+
 function getNormalVector(coord, otherCoord) {
     return {
         x: -(otherCoord.y - coord.y),
@@ -203,11 +204,21 @@ function getNormalVector(coord, otherCoord) {
     }
 }
 
+function getLength(vector) {
+    return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+}
+
 function getUnitVector(vector) {
-    const length = Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+    const length = getLength(vector);
     return {
         x: vector.x / length,
         y: vector.y / length,
+    }
+}
+
+function getMiddleOfVector(vectorA, vectorB) {
+    return {x: (vectorA.x + vectorB.x) / 2,
+            y: (vectorA.y + vectorB.y) / 2
     }
 }
 
@@ -265,25 +276,36 @@ function makeDraggable(evt) {
         const startId = ids.split("-")[0];
         const endId =  ids.split("-")[1];
         
-        // TODO: get the coords of the nodes, make an orthonal vector to them and determine the length of it by the mouse input
-        // if the length is below a given threshold, snap it into a straight position
+        // get the coords of the nodes
         const startNode = graph[startId];
         const endNode = graph[endId];
-        const middle = {
-            x: (startNode.coords.x + endNode.coords.x) / 2,
-            y: (startNode.coords.y + endNode.coords.y) / 2
-        }
+        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
 
         const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
 
         // determine distance to mouse 
-        const dist = getDistance(coord, middle);
-        console.log(dist);
+        const directionVector = {x: endNode.coords.x - startNode.coords.x, y: endNode.coords.y - startNode.coords.y};
+        const dot = getDotProduct({x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y}, directionVector);
+        const length = getLength(directionVector);
+        let dist = -2 * dot / length;
+        if (dist < THRESHOLD && dist > -THRESHOLD) {
+            dist = 0;
+        }
+
+        // update the offset in the data
+        const entry = startNode.to.find(e => e.node == endId);
+        entry.offset = dist;
+        const textOffset = startNode.to.find(e => e.node == endId).textOffset;
 
         const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
         for (let child of selectedElement.childNodes) {
             if (child.tagName == "path") {
                 child.setAttributeNS(null, "d", dValue);
+            }
+
+            if (child.tagName == "text") {
+                child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
+                child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
             }
         }
     }
@@ -415,7 +437,12 @@ function correctPaths(pathList, id, to) {
         // redraw the path
         const startNode = graph[to ? id : nodeId];
         const endNode = graph[to ? nodeId : id];
-        const dValue = `M${startNode.coords.x} ${startNode.coords.y} L${endNode.coords.x} ${endNode.coords.y}`;
+
+        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
+        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+        const dist = startNode.to.find(e => e.node = to ? nodeId : id).offset;
+        const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
+        const textOffset = startNode.to.find(e => e.node == to ? nodeId : id).textOffset;
 
         for (const child of path.childNodes) {
             if (child.tagName == "path") {
@@ -425,17 +452,13 @@ function correctPaths(pathList, id, to) {
             // redraw the label
             if (child.tagName == "text") {
                 const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
-                child.setAttributeNS(null, "x", (endNode.coords.x + startNode.coords.x) / 2 + normalVector.x * 2);
-                child.setAttributeNS(null, "y", (endNode.coords.y + startNode.coords.y) / 2 + normalVector.y * 2);
+                child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
+                child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
             }
         }
     }
 }
 
 function getDistance(coord, otherCoord) {
-    let direction = -1;
-    if (coord.x * otherCoord.y - otherCoord.x * coord.y) {
-        direction = 1;
-    }
-    return direction * Math.sqrt(Math.pow(otherCoord.x - coord.x, 2) + Math.pow(otherCoord.y - coord.y, 2));
+    return Math.sqrt(Math.pow(otherCoord.x - coord.x, 2) + Math.pow(otherCoord.y - coord.y, 2));
 }
