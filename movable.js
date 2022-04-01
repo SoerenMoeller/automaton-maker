@@ -22,6 +22,12 @@ let graph = {
                 desc: "a",
                 offset: 0,
                 textOffset: -2
+            }, 
+            {
+                node: 0,
+                desc: "b",
+                offset: 0,
+                textOffset: -2
             }
         ]
     },
@@ -158,7 +164,14 @@ function buildLines(svg, id) {
         })
 
         // initially the lines are straight
-        const dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
+        let dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
+
+        // self-edge
+        // TODO: figure out how to properly rotate this
+        // TODO: fix the arrow head for this
+        if (id == nodeId) {
+            dValue = `M${coords.x + NODE_RADIUS - 1} ${coords.y} A4 2 0 1 1 ${coords.x + NODE_RADIUS - 1} ${coords.y + 0.1}`;
+        }
         
         pathContainer.appendChild(getNode('path', {
             d: dValue,
