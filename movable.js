@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", main);
 
 let selectedElement = false;
-let CONSTANTS = {
-    path: "path"
-}
 const NODE_RADIUS = 4;
 const START_SHIFT = 7;
 const THRESHOLD = 2;
@@ -13,6 +10,7 @@ let graph = {
     0: {
         desc: "q0",
         attribute: "start",
+        startAngle: 270,
         coords: {
             x: 30,
             y: 50
@@ -106,7 +104,10 @@ function buildNode(svg, id) {
 
     // create starting arrow
     if (node.attribute == "start") {
-        const dValue = `M${node.coords.x - NODE_RADIUS - START_SHIFT} ${node.coords.y} L${node.coords.x} ${node.coords.y}`;
+        const startAngle = getVectorFromAngle(node.startAngle);
+        const length = NODE_RADIUS + START_SHIFT;
+        const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
+
         // make a thick invis line, to be able to click it nicely
         const startContainer = getNode("g", {
             id: `start_${id}`
@@ -322,22 +323,14 @@ function makeDraggable(evt) {
         const nodeId = ids.split("-")[0];
         const node = graph[nodeId];
 
-        const angle = getVectorAngle({x: coord.x - node.coords.x, y: coord.y - node.coords.y}, {x: 1, y: 0});
-        let correctAngle = angle * (180 / Math.PI);
-        const dot = getDotProduct({x: coord.x - node.coords.x, y: coord.y - node.coords.y}, {x: 0, y: 1});
-        
-        // left side
-        if (dot < 0) {
-            correctAngle = (360 - correctAngle);
-        }
-        
+        const angle = getAngle360Degree(node.coords, coord);
         const selfPath = node.to.find(e => e.node == nodeId);
-        selfPath.angle = correctAngle;
+        selfPath.angle = angle;
 
         for (let child of selectedElement.childNodes) {
             switch (child.tagName) {
                 case "path":
-                    child.setAttributeNS(null, "transform", `rotate(${correctAngle}, ${node.coords.x}, ${node.coords.y})`);
+                    child.setAttributeNS(null, "transform", `rotate(${angle}, ${node.coords.x}, ${node.coords.y})`);
                     break;
                 case "text":
                     correctSelfEdgeText(child, nodeId);
@@ -393,20 +386,14 @@ function makeDraggable(evt) {
         const id = parseInt(selectedElement.id.split("_")[1]);
         const node = graph[id];
 
-        // get vector to the new coords
-        let vector = {
-            x: coord.x - node.coords.x,
-            y: coord.y - node.coords.y
-        };
-
-        vector = getUnitVector(vector);
-
-        // make the vector the desired length
-        vector.x *= (NODE_RADIUS + START_SHIFT);
-        vector.y *= (NODE_RADIUS + START_SHIFT);
+        const angle = getAngle360Degree(node.coords, coord);
+        node.startAngle = angle;
 
         // adapt the line
-        const dValue = `M${node.coords.x + vector.x} ${node.coords.y + vector.y} L${node.coords.x} ${node.coords.y}`;
+        const startAngle = getVectorFromAngle(angle);
+        const length = NODE_RADIUS + START_SHIFT;
+        const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
+    
         selectedElement.childNodes[0].setAttributeNS(null, "d", dValue);
         selectedElement.childNodes[1].setAttributeNS(null, "d", dValue);
     }
@@ -447,23 +434,10 @@ function makeDraggable(evt) {
             const selector = `start_${id}`;
             const pathContainer = document.getElementById(selector);
 
-            // get the current coordinates
-            const dCurrent = pathContainer.firstChild.getAttributeNS(null, "d").split(" ");
-            const currentCoords = {
-                xFrom: parseInt(dCurrent[0].split("M")[1]),
-                yFrom: parseInt(dCurrent[1]),
-                xTo: parseInt(dCurrent[2].split("L")[1]),
-                yTo: parseInt(dCurrent[3])
-            };
+            const startAngle = getVectorFromAngle(node.startAngle);
+            const length = NODE_RADIUS + START_SHIFT;
+            const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
-            // get the offset of the node position
-            const offset = {
-                xOffset: coord.x - currentCoords.xTo,
-                yOffset: coord.y - currentCoords.yTo
-            }
-
-            // correct the path
-            const dValue = `M${currentCoords.xFrom + offset.xOffset} ${currentCoords.yFrom + offset.yOffset} L${coord.x} ${coord.y}`;
             pathContainer.childNodes[0].setAttributeNS(null, "d", dValue);
             pathContainer.childNodes[1].setAttributeNS(null, "d", dValue);
         }
@@ -599,4 +573,18 @@ function correctSelfEdgeText(elem, id) {
 
     elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * SELF_EDGE_TEXT_DISTANCE);
     elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * SELF_EDGE_TEXT_DISTANCE);
+}
+
+function getAngle360Degree(baseVector, position) {
+    const vector = {x: position.x - baseVector.x, y: position.y - baseVector.y};
+    const angle = getVectorAngle(vector, {x: 1, y: 0});
+    let angleDegree = angle * (180 / Math.PI);
+    const dot = getDotProduct(vector, {x: 0, y: 1});
+    
+    // correct the left side of the circle
+    if (dot < 0) {
+        angleDegree = (360 - angleDegree);
+    }
+
+    return angleDegree;
 }
