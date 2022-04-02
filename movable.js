@@ -5,6 +5,7 @@ const NODE_RADIUS = 4;
 const START_SHIFT = 7;
 const THRESHOLD = 2;
 const SELF_EDGE_TEXT_DISTANCE = 13;
+const TEXT_SIZE = 10;
 
 let graph = {
     0: {
@@ -152,6 +153,8 @@ function buildNode(svg, id) {
     }
 
     // create the text
+    let textNode = getTextNode(node.coords, "a_2^1");
+    /*
     let textNode = getNode("text", {
         class: "draggable",
         x: node.coords.x,
@@ -160,6 +163,7 @@ function buildNode(svg, id) {
         alignment_baseline: "central"
     });
     textNode.innerHTML = node.desc;
+    */
     container.appendChild(textNode);
 
     svg.appendChild(container);
@@ -407,7 +411,7 @@ function makeDraggable(evt) {
         let freezeX = coord.x > 100 - NODE_RADIUS || coord.x < NODE_RADIUS;
         let freezeY = coord.y > 100 - NODE_RADIUS || coord.y < NODE_RADIUS;
 
-        // prevent overlapping nodes
+        // prevent overlapping nodes TODO: PROBABLY BUGGY WITH MULTI NODES
         let distance;
         for (let nodeId in graph) {
             if (nodeId == id) continue;
@@ -429,7 +433,6 @@ function makeDraggable(evt) {
         }
 
         // change the path of start
-        // TODO: Bug - edge of window make the path shrink
         if (graph[id].attribute == "start") {
             const selector = `start_${id}`;
             const pathContainer = document.getElementById(selector);
@@ -587,4 +590,66 @@ function getAngle360Degree(baseVector, position) {
     }
 
     return angleDegree;
+}
+
+function getTextNode(position, text, draggable) {
+    const parsedText = parseText(text);
+    
+    let configuration = {
+        x: position.x,
+        y: position.y,
+        text_anchor: "middle",
+        alignment_baseline: "central"
+    };
+    if (draggable) {
+        configuration.class = "draggable";
+    }
+
+    const textNode = getNode("text", configuration);
+    textNode.innerHTML = parsedText.text;
+
+    if (parsedText.sub != "") {
+        const subTextNode = getNode("tspan", {
+            baseline_shift: "sub"
+        });
+        subTextNode.innerHTML = parsedText.sub;
+        textNode.appendChild(subTextNode);
+    }
+
+    if (parsedText.super != "") {
+        const superTextNode = getNode("tspan", {
+            baseline_shift: "super"
+        });
+        superTextNode.innerHTML = parsedText.super;
+        textNode.appendChild(superTextNode);
+    }
+
+    return textNode;
+}
+
+function parseText(input) {
+    console.log(input);
+    let result = {
+        text: "",
+        sub: "",
+        super: ""
+    };
+
+    const subSplit = input.split("_");
+    if (subSplit.length == 1) {
+        result.text = input;
+        return result;
+    } 
+
+    result.text = subSplit[0];
+    const superSplit = subSplit[1].split("^");
+    if (subSplit.length == 1) {
+        result.sub = subSplit[1];
+        return result;
+    }
+
+    result.sub = superSplit[0];
+    result.super = superSplit[1];
+
+    return result;
 }
