@@ -7,8 +7,8 @@ The functionality for labels could be added, to support LTS's.
 ## Current state
 - No labels on nodes yet
 - arrows my have some offset
-- self edges not rotatable yet
 - text size and subscripts not implemented
+- start arrow may disappear (save angle and reconstruct to prevent this)
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code
