@@ -5,16 +5,60 @@ const NODE_RADIUS = 4;
 const START_SHIFT = 7;
 const THRESHOLD = 2;
 const SELF_EDGE_TEXT_DISTANCE = 13;
-const TEXT_SIZE = 10;
+let textSize = 2.5;
+let subTextSize = 1.5;
 
 let graph = {
     0: {
-        desc: "q0",
+        desc: "q_1",
         attribute: "start",
         startAngle: 270,
         coords: {
-            x: 30,
-            y: 50
+            x: 20,
+            y: 20
+        },
+        to: [
+            {
+                node: 4,
+                desc: "b",
+                offset: 0,
+                textOffset: -2
+            }, 
+            {
+                node: 1,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }
+        ]
+    },
+    1: {
+        desc: "q_2",
+        attribute: "",
+        coords: {
+            x: 40,
+            y: 20
+        },
+        to: [
+            {
+                node: 1,
+                desc: "b",
+                angle: 0
+            },
+            {
+                node: 2,
+                desc: "b",
+                offset: 0,
+                textOffset: -2
+            }
+        ]
+    },
+    2: {
+        desc: "q_3",
+        attribute: "",
+        coords: {
+            x: 60,
+            y: 20
         },
         to: [
             {
@@ -24,20 +68,48 @@ let graph = {
                 textOffset: -2
             },
             {
-                node: 0,
-                desc: "b",
-                angle: 0
+                node: 3,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
             }
         ]
     },
-    1: {
-        desc: "q1",
+    3: {
+        desc: "q_4",
         attribute: "end",
         coords: {
-            x: 70,
-            y: 50
+            x: 80,
+            y: 20
         },
         to: [
+            {
+                node: 3,
+                desc: "a, b",
+                angle: 0
+            },
+            {
+                node: 3,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }
+        ]
+    },
+    4: {
+        desc: "q_5",
+        attribute: "",
+        coords: {
+            x: 20,
+            y: 40
+        },
+        to: [
+            {
+                node: 3,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }
         ]
     }
 }
@@ -85,17 +157,22 @@ function buildSVG(svg) {
     defs.appendChild(marker);
     defs.appendChild(markerSelf);
     svg.appendChild(defs);
-    console.log(svg);
+    
+    // style
+    const style = getNode("style", {});
+    style.innerHTML = `text {font: italic ${textSize}px sans-serif; user-select: none;} tspan {font: italic ${subTextSize}px sans-serif; user-select: none;}`
+    svg.appendChild(style);
 
     // render the lines first
     for (let node in graph) {
         buildLines(svg, node);
     }
-
+    
     // now render the nodes
     for (let node in graph) {
         buildNode(svg, node);
     }
+    console.log(svg);
 }
 
 function buildNode(svg, id) {
@@ -154,17 +231,7 @@ function buildNode(svg, id) {
     }
 
     // create the text
-    let textNode = getTextNode(node.coords, "a_2^1", true);
-    /*
-    let textNode = getNode("text", {
-        class: "draggable",
-        x: node.coords.x,
-        y: node.coords.y,
-        text_anchor: "middle",
-        alignment_baseline: "central"
-    });
-    textNode.innerHTML = node.desc;
-    */
+    const textNode = getTextNode(node.coords, node.desc, true);
     container.appendChild(textNode);
 
     svg.appendChild(container);
@@ -211,28 +278,23 @@ function buildLines(svg, id) {
             const normalVector = getUnitVector(getNormalVector(node.coords, otherCoords));
             const middle = getMiddleOfVector(node.coords, otherCoords);
             const offset = node.to.find(e => e.node == nodeId).textOffset;
-            const label = getNode("text", {
+            const textCoords = {
                 x: middle.x + normalVector.x * offset,
-                y: middle.y + normalVector.y * offset,
-                text_anchor: "middle",
-                alignment_baseline: "central"
-            });
-            label.innerHTML = node.to[otherNode].desc;
-            pathContainer.appendChild(label);
+                y: middle.y + normalVector.y * offset
+            }
+
+            const textNode = getTextNode(textCoords, node.to[otherNode].desc, false);
+            pathContainer.appendChild(textNode);
         } else {
             const path = node.to.find(e => e.node == id);
             const angleVector = getVectorFromAngle(path.angle);
-            const dist = 13;
+            const textCoords = {
+                x: node.coords.x + angleVector.x * SELF_EDGE_TEXT_DISTANCE,
+                y: node.coords.y + angleVector.y * SELF_EDGE_TEXT_DISTANCE
+            }
+            const textNode = getTextNode(textCoords, path.desc, false);
 
-            const label = getNode("text", {
-                x: node.coords.x + angleVector.x * dist,
-                y: node.coords.y + angleVector.y * dist,
-                text_anchor: "middle",
-                alignment_baseline: "central"
-            });
-
-            label.innerHTML = path.desc;
-            pathContainer.appendChild(label);
+            pathContainer.appendChild(textNode);
         }
         svg.appendChild(pathContainer);
     }
@@ -257,7 +319,6 @@ function getTextNode(position, text, draggable) {
     };
     if (draggable) {
         configuration.class = "draggable";
-        console.log(configuration);
     }
 
     const textNode = getNode("text", configuration);
@@ -265,15 +326,21 @@ function getTextNode(position, text, draggable) {
 
     if (parsedText.sub != "") {
         const subTextNode = getNode("tspan", {
-            baseline_shift: "sub"
+            baseline_shift: "sub",
+            dy: "0.5"
         });
         subTextNode.innerHTML = parsedText.sub;
         textNode.appendChild(subTextNode);
     }
 
     if (parsedText.super != "") {
+        // shift back the super text on top of the sub text
+        const backShift = -parsedText.sub.length * (subTextSize / 2);
+        console.log(backShift);
         const superTextNode = getNode("tspan", {
-            baseline_shift: "super"
+            baseline_shift: "super",
+            dx: backShift,
+            dy: "0"
         });
         superTextNode.innerHTML = parsedText.super;
         textNode.appendChild(superTextNode);
@@ -291,20 +358,21 @@ function parseText(input) {
     };
 
     const subSplit = input.split("_");
-    if (subSplit.length == 1) {
-        result.text = input;
-        return result;
-    } 
+    const superSplit = input.split("^");
 
-    result.text = subSplit[0];
-    const superSplit = subSplit[1].split("^");
-    if (subSplit.length == 1) {
+    if (subSplit.length === 1 && superSplit.length === 1) {
+        result.text = subSplit[0];
+    } else if (subSplit.length !== 1 && superSplit.length === 1) {
+        result.text = subSplit[0];
         result.sub = subSplit[1];
-        return result;
+    } else if (subSplit.length === 1 && superSplit.length !== 1) {
+        result.text = superSplit[0];
+        result.super = superSplit[1];
+    } else {
+        result.text = subSplit[0];
+        result.sub = subSplit[1].split("^")[0];
+        result.super = superSplit[1];
     }
-    
-    result.sub = superSplit[0];
-    result.super = superSplit[1];
     
     return result;
 }
@@ -659,4 +727,13 @@ function getVectorFromAngle(angle) {
     }
     
     return getUnitVector(vector);
+}
+
+function downloadSVG() {
+    var svgData = document.getElementsByTagName("svg")[0].outerHTML;
+    var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
+    var svgUrl = URL.createObjectURL(svgBlob);
+    var downloadLink = document.getElementsByTagName("a")[0];
+    downloadLink.href = svgUrl;
+    downloadLink.download = "test.svg";
 }
