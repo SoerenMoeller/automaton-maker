@@ -7,7 +7,7 @@ The functionality for labels could be added, to support LTS's.
 ## Current state
 - No labels on nodes yet
 - arrows my have some offset
-- text size and subscripts not implemented
+- no input system yet
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code
