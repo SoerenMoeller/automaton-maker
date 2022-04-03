@@ -153,7 +153,7 @@ function buildNode(svg, id) {
     }
 
     // create the text
-    let textNode = getTextNode(node.coords, "a_2^1");
+    let textNode = getTextNode(node.coords, "a_2^1", true);
     /*
     let textNode = getNode("text", {
         class: "draggable",
@@ -283,8 +283,16 @@ function makeDraggable(evt) {
     svg.addEventListener('mouseleave', endDrag);
 
     function startDrag(evt) {
+        console.log(evt.target.classList);
         if (evt.target.classList.contains('draggable')) {
-            const parent = evt.target.parentNode;
+            let parent = evt.target.parentNode;
+            
+            // this happens if we hit a sub/super text
+            console.log("test");
+            if (parent.tagName == "text") {
+                parent = parent.parentNode;
+            }
+
             if (parent && parent.tagName == "g") {
                 selectedElement = parent;
             } else {
@@ -603,6 +611,7 @@ function getTextNode(position, text, draggable) {
     };
     if (draggable) {
         configuration.class = "draggable";
+        console.log(configuration);
     }
 
     const textNode = getNode("text", configuration);
