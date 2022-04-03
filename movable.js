@@ -434,7 +434,7 @@ function makeDraggable(evt) {
         const pathContainer = selectedElement.parentNode;
         const ids = pathContainer.id.split("_")[1];
         const startId = ids.split("-")[0];
-        const endId = ids.split("-")[1];
+        const endId = ids.split("-")[1]; 
         const startNode = graph[startId];
         const endNode = graph[endId];
 
