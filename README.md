@@ -8,6 +8,8 @@ The functionality for labels could be added, to support LTS's.
 - No labels on nodes yet
 - arrows my have some offset
 - no input system yet
+- may add support for multiple textlines (edge labels)
+- may add text offset to self nodes
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code
