@@ -5,6 +5,7 @@ const NODE_RADIUS = 4;
 const START_SHIFT = 7;
 const THRESHOLD = 2;
 const SELF_EDGE_TEXT_DISTANCE = 13;
+const TEXT_THRESHOLD = 3;
 let textSize = 2.5;
 let subTextSize = 1.5;
 
@@ -87,12 +88,6 @@ let graph = {
                 node: 3,
                 desc: "a, b",
                 angle: 0
-            },
-            {
-                node: 3,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
             }
         ]
     },
@@ -172,7 +167,6 @@ function buildSVG(svg) {
     for (let node in graph) {
         buildNode(svg, node);
     }
-    console.log(svg);
 }
 
 function buildNode(svg, id) {
@@ -283,7 +277,7 @@ function buildLines(svg, id) {
                 y: middle.y + normalVector.y * offset
             }
 
-            const textNode = getTextNode(textCoords, node.to[otherNode].desc, false);
+            const textNode = getTextNode(textCoords, node.to[otherNode].desc, true);
             pathContainer.appendChild(textNode);
         } else {
             const path = node.to.find(e => e.node == id);
@@ -336,7 +330,6 @@ function getTextNode(position, text, draggable) {
     if (parsedText.super != "") {
         // shift back the super text on top of the sub text
         const backShift = -parsedText.sub.length * (subTextSize / 2);
-        console.log(backShift);
         const superTextNode = getNode("tspan", {
             baseline_shift: "super",
             dx: backShift,
@@ -350,7 +343,6 @@ function getTextNode(position, text, draggable) {
 }
 
 function parseText(input) {
-    console.log(input);
     let result = {
         text: "",
         sub: "",
@@ -391,7 +383,9 @@ function makeDraggable(evt) {
         if (elem.classList.contains('draggable')) {
             let parent = elem.parentNode;
 
-            if (parent && parent.tagName == "g") {
+            if (elem.tagName == "text" && parent.id.includes("path")) {
+                selectedElement = elem;
+            } else if (parent && parent.tagName == "g") {
                 selectedElement = parent;
             } else {
                 console.error("Wrong element clickable");
@@ -403,8 +397,13 @@ function makeDraggable(evt) {
         if (selectedElement) {
             evt.preventDefault();
             const coord = getMousePosition(evt);
-            const prefix = selectedElement.id.split("_")[0];
+            let prefix = selectedElement.id.split("_")[0];
             const suffix = selectedElement.id.split("_")[1];
+
+            // if a text is selected, we want to change the offset
+            if (selectedElement.tagName === "text") {
+                prefix = "text";
+            }
 
             switch (prefix) {
                 case "node":
@@ -421,9 +420,39 @@ function makeDraggable(evt) {
                         dragEdge(coord);
                     }
                     break;
+                case "text":
+                    dragText(coord);
+                    break;
                 default:
                     console.error("unknown dragging type");
             }
+        }
+    }
+
+    function dragText(coord) {
+        // get the id of the node
+        const pathContainer = selectedElement.parentNode;
+        const ids = pathContainer.id.split("_")[1];
+        const startId = ids.split("-")[0];
+        const endId = ids.split("-")[1];
+        const startNode = graph[startId];
+        const endNode = graph[endId];
+
+        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
+        const directionVector = { x: endNode.coords.x - startNode.coords.x, y: endNode.coords.y - startNode.coords.y };
+        const dot = getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
+        const length = getLength(directionVector);
+        let dist = -dot / length;
+
+        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+        const path = graph[startId].to.find(e => e.node == endId);
+        const edgeOffset = path.offset / 2;
+        dist -= edgeOffset;
+        
+        if (dist < TEXT_THRESHOLD && dist > -TEXT_THRESHOLD) {
+            path.textOffset = dist;
+            selectedElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
+            selectedElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
         }
     }
 
@@ -517,12 +546,13 @@ function makeDraggable(evt) {
         let freezeX = coord.x > 100 - NODE_RADIUS || coord.x < NODE_RADIUS;
         let freezeY = coord.y > 100 - NODE_RADIUS || coord.y < NODE_RADIUS;
 
-        // prevent overlapping nodes TODO: PROBABLY BUGGY WITH MULTI NODES
-        let distance;
+        // prevent overlapping nodes
+        let distance = Number.MAX_VALUE;
         for (let nodeId in graph) {
             if (nodeId == id) continue;
 
-            distance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+            const tmpDistance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+            distance = Math.min(distance, tmpDistance);
         }
         if (freezeX || distance < 2 * NODE_RADIUS) {
             coord.x = graph[id].coords.x;
@@ -552,7 +582,6 @@ function makeDraggable(evt) {
         }
 
         graph[id].coords = coord;
-
         // get all paths from current node
         const pathTo = [];
         let paths = graph[id].to;
@@ -572,6 +601,7 @@ function makeDraggable(evt) {
             }
         }
 
+        console.log(pathTo);
         // remove the self edge
         if (pathTo.includes(id)) {
             const indexTo = pathTo.indexOf(id);
@@ -632,15 +662,17 @@ function correctEdges(pathList, id, to) {
 
         const middle = getMiddleOfVector(startNode.coords, endNode.coords);
         const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
-        const dist = startNode.to.find(e => e.node = to ? nodeId : id).offset;
+        const otherNode = startNode.to.find(e => e.node == (to ? nodeId : id));
+        const dist = otherNode.offset;
+
         const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
-        const textOffset = startNode.to.find(e => e.node == to ? nodeId : id).textOffset;
+        const textOffset = otherNode.textOffset;
 
         for (const child of path.childNodes) {
             if (child.tagName == "path") {
                 child.setAttributeNS(null, "d", dValue);
             }
-
+            
             // redraw the label
             if (child.tagName == "text") {
                 const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
