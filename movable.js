@@ -51,6 +51,7 @@ function main() {
     buildSVG(svg);
 }
 
+/* ========================================== Building svg methods ========================================== */
 function buildSVG(svg) {
     // removes content of svg
     svg.innerHTML = "";
@@ -237,36 +238,6 @@ function buildLines(svg, id) {
     }
 }
 
-function getDotProduct(vectorA, vectorB) {
-    return vectorA.x * vectorB.y - vectorB.x * vectorA.y;
-}
-
-function getNormalVector(vectorA, vectorB) {
-    return {
-        x: -(vectorB.y - vectorA.y),
-        y: vectorB.x - vectorA.x
-    }
-}
-
-function getLength(vector) {
-    return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
-}
-
-function getUnitVector(vector) {
-    const length = getLength(vector);
-    return {
-        x: vector.x / length,
-        y: vector.y / length,
-    }
-}
-
-function getMiddleOfVector(vectorA, vectorB) {
-    return {
-        x: (vectorA.x + vectorB.x) / 2,
-        y: (vectorA.y + vectorB.y) / 2
-    }
-}
-
 function getNode(n, v) {
     n = document.createElementNS("http://www.w3.org/2000/svg", n);
     for (var p in v) {
@@ -275,6 +246,70 @@ function getNode(n, v) {
     return n
 }
 
+function getTextNode(position, text, draggable) {
+    const parsedText = parseText(text);
+    
+    let configuration = {
+        x: position.x,
+        y: position.y,
+        text_anchor: "middle",
+        alignment_baseline: "central"
+    };
+    if (draggable) {
+        configuration.class = "draggable";
+        console.log(configuration);
+    }
+
+    const textNode = getNode("text", configuration);
+    textNode.innerHTML = parsedText.text;
+
+    if (parsedText.sub != "") {
+        const subTextNode = getNode("tspan", {
+            baseline_shift: "sub"
+        });
+        subTextNode.innerHTML = parsedText.sub;
+        textNode.appendChild(subTextNode);
+    }
+
+    if (parsedText.super != "") {
+        const superTextNode = getNode("tspan", {
+            baseline_shift: "super"
+        });
+        superTextNode.innerHTML = parsedText.super;
+        textNode.appendChild(superTextNode);
+    }
+
+    return textNode;
+}
+
+function parseText(input) {
+    console.log(input);
+    let result = {
+        text: "",
+        sub: "",
+        super: ""
+    };
+
+    const subSplit = input.split("_");
+    if (subSplit.length == 1) {
+        result.text = input;
+        return result;
+    } 
+
+    result.text = subSplit[0];
+    const superSplit = subSplit[1].split("^");
+    if (subSplit.length == 1) {
+        result.sub = subSplit[1];
+        return result;
+    }
+    
+    result.sub = superSplit[0];
+    result.super = superSplit[1];
+    
+    return result;
+}
+
+/* ========================================== Dragging logic ========================================== */
 function makeDraggable(evt) {
     var svg = evt.target;
     svg.addEventListener('mousedown', startDrag);
@@ -283,15 +318,10 @@ function makeDraggable(evt) {
     svg.addEventListener('mouseleave', endDrag);
 
     function startDrag(evt) {
-        console.log(evt.target.classList);
-        if (evt.target.classList.contains('draggable')) {
-            let parent = evt.target.parentNode;
-            
-            // this happens if we hit a sub/super text
-            console.log("test");
-            if (parent.tagName == "text") {
-                parent = parent.parentNode;
-            }
+        let elem = evt.target.tagName !== "tspan" ? evt.target : evt.target.parentNode;
+
+        if (elem.classList.contains('draggable')) {
+            let parent = elem.parentNode;
 
             if (parent && parent.tagName == "g") {
                 selectedElement = parent;
@@ -313,14 +343,14 @@ function makeDraggable(evt) {
                     dragNode(coord);
                     break;
                 case "start":
-                    dragStart(coord);
+                    dragStartEdge(coord);
                     break;
                 case "path":
                     const nodes = suffix.split("-");
                     if (nodes[0] == nodes[1]) {
-                        dragSelfPath(coord);
+                        dragSelfEdge(coord);
                     } else {
-                        dragPath(coord);
+                        dragEdge(coord);
                     }
                     break;
                 default:
@@ -329,7 +359,7 @@ function makeDraggable(evt) {
         }
     }
 
-    function dragSelfPath(coord) {
+    function dragSelfEdge(coord) {
         // get the id of the node
         const ids = selectedElement.id.split("_")[1];
         const nodeId = ids.split("-")[0];
@@ -353,7 +383,7 @@ function makeDraggable(evt) {
         }
     }
 
-    function dragPath(coord) {
+    function dragEdge(coord) {
         // get the id of the node
         const ids = selectedElement.id.split("_")[1];
         const startId = ids.split("-")[0];
@@ -393,7 +423,7 @@ function makeDraggable(evt) {
         }
     }
 
-    function dragStart(coord) {
+    function dragStartEdge(coord) {
         // get the id of the node
         const id = parseInt(selectedElement.id.split("_")[1]);
         const node = graph[id];
@@ -505,8 +535,8 @@ function makeDraggable(evt) {
         }
 
         // correct the paths
-        correctPaths(pathTo, id, true);
-        correctPaths(pathFrom, id, false);
+        correctEdges(pathTo, id, true);
+        correctEdges(pathFrom, id, false);
     }
 
     function endDrag(evt) {
@@ -522,7 +552,7 @@ function makeDraggable(evt) {
     }
 }
 
-function correctPaths(pathList, id, to) {
+function correctEdges(pathList, id, to) {
     for (let nodeId of pathList) {
         // get the svg path
         const selector = `path_${to ? id : nodeId}-${to ? nodeId : id}`;
@@ -553,8 +583,48 @@ function correctPaths(pathList, id, to) {
     }
 }
 
-function getDistance(coord, otherCoord) {
-    return Math.sqrt(Math.pow(otherCoord.x - coord.x, 2) + Math.pow(otherCoord.y - coord.y, 2));
+function correctSelfEdgeText(elem, id) {
+    const node = graph[id];
+    const path = node.to.find(e => e.node == id);
+    const angleVector = getVectorFromAngle(path.angle);
+
+    elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * SELF_EDGE_TEXT_DISTANCE);
+    elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * SELF_EDGE_TEXT_DISTANCE);
+}
+
+/* ========================================== Vector methods ========================================== */
+
+function getLength(vector) {
+    return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
+}
+
+function getDistance(vectorA, vectorB) {
+    return Math.sqrt(Math.pow(vectorB.x - vectorA.x, 2) + Math.pow(vectorB.y - vectorA.y, 2));
+}
+
+function getDotProduct(vectorA, vectorB) {
+    return vectorA.x * vectorB.y - vectorB.x * vectorA.y;
+}
+function getNormalVector(vectorA, vectorB) {
+    return {
+        x: -(vectorB.y - vectorA.y),
+        y: vectorB.x - vectorA.x
+    }
+}
+
+function getUnitVector(vector) {
+    const length = getLength(vector);
+    return {
+        x: vector.x / length,
+        y: vector.y / length,
+    }
+}
+
+function getMiddleOfVector(vectorA, vectorB) {
+    return {
+        x: (vectorA.x + vectorB.x) / 2,
+        y: (vectorA.y + vectorB.y) / 2
+    }
 }
 
 function getVectorAngle(vectorA, vectorB) {
@@ -563,27 +633,6 @@ function getVectorAngle(vectorA, vectorB) {
     const lengthB = getLength(vectorB);
 
     return Math.acos(dot / (lengthA * lengthB));
-}
-
-function getVectorFromAngle(angle) {
-    const angleBase = {x: 0, y: -1};
-
-    const radiantAngle = (360 - angle) * (Math.PI / 180);
-    const vector = {
-        x: angleBase.x * Math.cos(radiantAngle) + angleBase.y * Math.sin(radiantAngle),
-        y: angleBase.y * Math.cos(radiantAngle) - angleBase.x * Math.sin(radiantAngle)
-    }
-    
-    return getUnitVector(vector);
-}
-
-function correctSelfEdgeText(elem, id) {
-    const node = graph[id];
-    const path = node.to.find(e => e.node == id);
-    const angleVector = getVectorFromAngle(path.angle);
-
-    elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * SELF_EDGE_TEXT_DISTANCE);
-    elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * SELF_EDGE_TEXT_DISTANCE);
 }
 
 function getAngle360Degree(baseVector, position) {
@@ -600,65 +649,14 @@ function getAngle360Degree(baseVector, position) {
     return angleDegree;
 }
 
-function getTextNode(position, text, draggable) {
-    const parsedText = parseText(text);
+function getVectorFromAngle(angle) {
+    const angleBase = {x: 0, y: -1};
+
+    const radiantAngle = (360 - angle) * (Math.PI / 180);
+    const vector = {
+        x: angleBase.x * Math.cos(radiantAngle) + angleBase.y * Math.sin(radiantAngle),
+        y: angleBase.y * Math.cos(radiantAngle) - angleBase.x * Math.sin(radiantAngle)
+    }
     
-    let configuration = {
-        x: position.x,
-        y: position.y,
-        text_anchor: "middle",
-        alignment_baseline: "central"
-    };
-    if (draggable) {
-        configuration.class = "draggable";
-        console.log(configuration);
-    }
-
-    const textNode = getNode("text", configuration);
-    textNode.innerHTML = parsedText.text;
-
-    if (parsedText.sub != "") {
-        const subTextNode = getNode("tspan", {
-            baseline_shift: "sub"
-        });
-        subTextNode.innerHTML = parsedText.sub;
-        textNode.appendChild(subTextNode);
-    }
-
-    if (parsedText.super != "") {
-        const superTextNode = getNode("tspan", {
-            baseline_shift: "super"
-        });
-        superTextNode.innerHTML = parsedText.super;
-        textNode.appendChild(superTextNode);
-    }
-
-    return textNode;
-}
-
-function parseText(input) {
-    console.log(input);
-    let result = {
-        text: "",
-        sub: "",
-        super: ""
-    };
-
-    const subSplit = input.split("_");
-    if (subSplit.length == 1) {
-        result.text = input;
-        return result;
-    } 
-
-    result.text = subSplit[0];
-    const superSplit = subSplit[1].split("^");
-    if (subSplit.length == 1) {
-        result.sub = subSplit[1];
-        return result;
-    }
-
-    result.sub = superSplit[0];
-    result.super = superSplit[1];
-
-    return result;
+    return getUnitVector(vector);
 }
