@@ -1,40 +1,35 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
 
-    <style type="text/css">
-        main {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Spectral|Rubik">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans">
+  <link rel="stylesheet" href="styles/reset.css">
+  <link rel="stylesheet" href="styles/style.css">
 
-        svg {
-            width: 90vmin;
-            height: 90vmin;
-            background-color: rgb(235, 235, 235);
-            border: 0.2rem solid rgb(163, 192, 246);
-            border-radius: 1rem;
-        }
-
-        .draggable {cursor: move;}
-    </style>
-
-    <script src="movable.js"></script>
+  <script src="movable.js"></script>
 </head>
 
 <body>
   <main>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" onload="makeDraggable(evt)"></svg>
 
-    <label for="w3review">Review of W3Schools:</label>
-    <textarea id="w3review" name="w3review" rows="4" cols="50">
-    Enter graph here
-  </textarea>
+    <aside>
+      <div class="container">
+        <div class="containerHeader">
+          <h1>Nodes</h1>
+          <button>Add</button>
+        </div>
+        <div class="listContainer">
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </aside>
   </main>
   <a onclick="downloadSVG()">Download</a>
 </body>

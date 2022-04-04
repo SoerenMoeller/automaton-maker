@@ -33,29 +33,3 @@ input, button, textarea, select { font: inherit; }
 p, h1, h2, h3, h4, h5, h6 {
   overflow-wrap: break-word;
 }
-
-/* use this since the back button is on every page */
-#leave {
-  background-color: blue;
-  border: 2px black solid;
-  border-radius: 10px;
-  box-shadow: 2px 2px 2px 1px grey;
-  cursor: pointer;
-
-  width: 70px;
-  height: 70px;
-
-  position: fixed;
-  bottom: 5px;
-  right: 5px;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#leave > img {
-  width: 50%;
-  height: 50%;
-  margin: 10%;
-}
