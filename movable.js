@@ -120,12 +120,69 @@ function main() {
     svg = elements[0]
 
     //buildSVG(svg);
-    const nodeAdd = document.getElementsByClassName("addButton")[0];
-    nodeAdd.addEventListener("click", buildNodeLine)
+    const addButtons = document.getElementsByClassName("addButton");
+    const nodeAdd = addButtons[0];
+    nodeAdd.addEventListener("click", buildNodeView);
+
+    const edgeAdd = addButtons[1];
+    edgeAdd.addEventListener("click", buildEdgeView);
+
+    const reloadButton = document.getElementsByTagName("img")[0];
+    reloadButton.addEventListener("click", reloadGraph);
 }
 
 /* ========================================== Build view elements methods ========================================== */
-function buildNodeLine(event) {
+function reloadGraph(event) {
+
+}
+
+function buildEdgeView(event) {
+    const container = document.getElementsByClassName("listContainer")[1];
+
+    const id = container.childNodes.length;
+    const line = createDomElement("div");
+
+    const textInput = createDomElement("input", {
+        type: "text",
+        id: `edgeName${id}`,
+        name: `edgeName${id}`
+    });
+    line.appendChild(textInput);
+
+    const fromContainer = createDomElement("div", { class: "settingsContainer" });
+    const fromText = createDomElement("p");
+    fromText.innerText = "From";
+    const fromInputList = createDomElement("input", {
+        list: "nodeNames",
+        id: `nodeFrom${id}`,
+        name: `nodeFrom${id}`,
+        width: "10%"
+    });
+    fromContainer.appendChild(fromText);
+    fromContainer.appendChild(fromInputList);
+    line.appendChild(fromContainer);
+
+    const toContainer = createDomElement("div", { class: "settingsContainer" });
+    const toText = createDomElement("p");
+    toText.innerText = "To";
+    const toInputList = createDomElement("input", {
+        list: "nodeNames",
+        id: `nodeTo${id}`,
+        name: `nodeTo${id}`
+    });
+    toContainer.appendChild(toText);
+    toContainer.appendChild(toInputList);
+    line.appendChild(toContainer);
+
+    const closeButton = createDomElement("button", { class: "deleteButton" });
+    closeButton.innerText = "-";
+    line.appendChild(closeButton);
+
+    container.appendChild(line);
+    console.log(line);
+}
+
+function buildNodeView(event) {
     const container = document.getElementsByClassName("listContainer")[0];
 
     const id = container.childNodes.length;
@@ -167,7 +224,12 @@ function buildNodeLine(event) {
     line.appendChild(closeButton);
 
     container.appendChild(line);
-    console.log(line);
+
+    // add events
+    textInput.addEventListener("change", e => {
+        // TODO: add node to graph and refresh the view, if elem is already present, keep the coordinates
+        // TODO: figure out better id handling
+    })
 }
 
 function createDomElement(name, attributes) {
