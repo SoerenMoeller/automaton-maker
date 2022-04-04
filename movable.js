@@ -8,6 +8,8 @@ const SELF_EDGE_TEXT_DISTANCE = 13;
 const TEXT_THRESHOLD = 3;
 let textSize = 2.5;
 let subTextSize = 1.5;
+let id = 0;
+let shiftPressed = false;
 
 /*
 let graph = {
@@ -120,126 +122,43 @@ function main() {
     svg = elements[0]
 
     //buildSVG(svg);
-    const addButtons = document.getElementsByClassName("addButton");
-    const nodeAdd = addButtons[0];
-    nodeAdd.addEventListener("click", buildNodeView);
 
-    const edgeAdd = addButtons[1];
-    edgeAdd.addEventListener("click", buildEdgeView);
-
-    const reloadButton = document.getElementsByTagName("img")[0];
-    reloadButton.addEventListener("click", reloadGraph);
+    document.addEventListener("keydown", handleKeyEvent);
+    document.addEventListener("keyup", handleKeyUpEvent);
 }
 
-/* ========================================== Build view elements methods ========================================== */
-function reloadGraph(event) {
-
+function handleKeyUpEvent(event) {
+    console.log("up");
 }
 
-function buildEdgeView(event) {
-    const container = document.getElementsByClassName("listContainer")[1];
-
-    const id = container.childNodes.length;
-    const line = createDomElement("div");
-
-    const textInput = createDomElement("input", {
-        type: "text",
-        id: `edgeName${id}`,
-        name: `edgeName${id}`
-    });
-    line.appendChild(textInput);
-
-    const fromContainer = createDomElement("div", { class: "settingsContainer" });
-    const fromText = createDomElement("p");
-    fromText.innerText = "From";
-    const fromInputList = createDomElement("input", {
-        list: "nodeNames",
-        id: `nodeFrom${id}`,
-        name: `nodeFrom${id}`,
-        width: "10%"
-    });
-    fromContainer.appendChild(fromText);
-    fromContainer.appendChild(fromInputList);
-    line.appendChild(fromContainer);
-
-    const toContainer = createDomElement("div", { class: "settingsContainer" });
-    const toText = createDomElement("p");
-    toText.innerText = "To";
-    const toInputList = createDomElement("input", {
-        list: "nodeNames",
-        id: `nodeTo${id}`,
-        name: `nodeTo${id}`
-    });
-    toContainer.appendChild(toText);
-    toContainer.appendChild(toInputList);
-    line.appendChild(toContainer);
-
-    const closeButton = createDomElement("button", { class: "deleteButton" });
-    closeButton.innerText = "-";
-    line.appendChild(closeButton);
-
-    container.appendChild(line);
-    console.log(line);
+function handleKeyEvent(event) {
+    switch (event.code) {
+        case "KeyA":
+            addNode();
+            break;
+        case "ShiftRight":
+        case "ShiftLeft":
+            shiftPressed = true;
+            break;
+        default:
+            console.log(event.code);
+      }
 }
 
-function buildNodeView(event) {
-    const container = document.getElementsByClassName("listContainer")[0];
-
-    const id = container.childNodes.length;
-    const line = createDomElement("div");
-
-    const textInput = createDomElement("input", {
-        type: "text",
-        id: `nodeName${id}`,
-        name: `nodeName${id}`
-    });
-    line.appendChild(textInput);
-
-    const startContainer = createDomElement("div", { class: "settingsContainer" });
-    const startText = createDomElement("p");
-    startText.innerText = "Start";
-    const startCheckBox = createDomElement("input", {
-        type: "checkbox",
-        id: `nodeStart${id}`,
-        name: `nodeStart${id}`
-    });
-    startContainer.appendChild(startText);
-    startContainer.appendChild(startCheckBox);
-    line.appendChild(startContainer);
-
-    const endContainer = createDomElement("div", { class: "settingsContainer" });
-    const endText = createDomElement("p");
-    endText.innerText = "End";
-    const endCheckBox = createDomElement("input", {
-        type: "checkbox",
-        id: `nodeEnd${id}`,
-        name: `nodeEnd${id}`
-    });
-    endContainer.appendChild(endText);
-    endContainer.appendChild(endCheckBox);
-    line.appendChild(endContainer);
-
-    const closeButton = createDomElement("button", { class: "deleteButton" });
-    closeButton.innerText = "-";
-    line.appendChild(closeButton);
-
-    container.appendChild(line);
-
-    // add events
-    textInput.addEventListener("change", e => {
-        // TODO: add node to graph and refresh the view, if elem is already present, keep the coordinates
-        // TODO: figure out better id handling
-    })
-}
-
-function createDomElement(name, attributes) {
-    const element = document.createElement(name);
-
-    for (let attr in attributes) {
-        element.setAttribute(attr, attributes[attr]);
+function addNode() {
+    let node = {
+        desc: "",
+        attribute: "",
+        coords: {
+            x: 10,
+            y: 10
+        },
+        to: []
     }
 
-    return element;
+    graph[id++] = node;
+
+    buildSVG(document.getElementsByTagName("svg")[0]);
 }
 
 /* ========================================== Building svg methods ========================================== */
