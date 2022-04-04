@@ -9,6 +9,7 @@ const TEXT_THRESHOLD = 3;
 let textSize = 2.5;
 let subTextSize = 1.5;
 
+/*
 let graph = {
     0: {
         desc: "q_1",
@@ -108,6 +109,9 @@ let graph = {
         ]
     }
 }
+*/
+
+let graph = {};
 
 function main() {
     // find the svg to draw in
@@ -115,7 +119,65 @@ function main() {
     console.assert(elements.length > 0, "svg not found");
     svg = elements[0]
 
-    buildSVG(svg);
+    //buildSVG(svg);
+    const nodeAdd = document.getElementsByClassName("addButton")[0];
+    nodeAdd.addEventListener("click", buildNodeLine)
+}
+
+/* ========================================== Build view elements methods ========================================== */
+function buildNodeLine(event) {
+    const container = document.getElementsByClassName("listContainer")[0];
+
+    const id = container.childNodes.length;
+    const line = createDomElement("div");
+
+    const textInput = createDomElement("input", {
+        type: "text",
+        id: `nodeName${id}`,
+        name: `nodeName${id}`
+    });
+    line.appendChild(textInput);
+
+    const startContainer = createDomElement("div", { class: "settingsContainer" });
+    const startText = createDomElement("p");
+    startText.innerText = "Start";
+    const startCheckBox = createDomElement("input", {
+        type: "checkbox",
+        id: `nodeStart${id}`,
+        name: `nodeStart${id}`
+    });
+    startContainer.appendChild(startText);
+    startContainer.appendChild(startCheckBox);
+    line.appendChild(startContainer);
+
+    const endContainer = createDomElement("div", { class: "settingsContainer" });
+    const endText = createDomElement("p");
+    endText.innerText = "End";
+    const endCheckBox = createDomElement("input", {
+        type: "checkbox",
+        id: `nodeEnd${id}`,
+        name: `nodeEnd${id}`
+    });
+    endContainer.appendChild(endText);
+    endContainer.appendChild(endCheckBox);
+    line.appendChild(endContainer);
+
+    const closeButton = createDomElement("button", { class: "deleteButton" });
+    closeButton.innerText = "-";
+    line.appendChild(closeButton);
+
+    container.appendChild(line);
+    console.log(line);
+}
+
+function createDomElement(name, attributes) {
+    const element = document.createElement(name);
+
+    for (let attr in attributes) {
+        element.setAttribute(attr, attributes[attr]);
+    }
+
+    return element;
 }
 
 /* ========================================== Building svg methods ========================================== */
@@ -152,7 +214,7 @@ function buildSVG(svg) {
     defs.appendChild(marker);
     defs.appendChild(markerSelf);
     svg.appendChild(defs);
-    
+
     // style
     const style = getNode("style", {});
     style.innerHTML = `text {font: italic ${textSize}px sans-serif; user-select: none;} tspan {font: italic ${subTextSize}px sans-serif; user-select: none;}`
@@ -162,7 +224,7 @@ function buildSVG(svg) {
     for (let node in graph) {
         buildLines(svg, node);
     }
-    
+
     // now render the nodes
     for (let node in graph) {
         buildNode(svg, node);
@@ -304,7 +366,7 @@ function getNode(n, v) {
 
 function getTextNode(position, text, draggable) {
     const parsedText = parseText(text);
-    
+
     let configuration = {
         x: position.x,
         y: position.y,
@@ -365,7 +427,7 @@ function parseText(input) {
         result.sub = subSplit[1].split("^")[0];
         result.super = superSplit[1];
     }
-    
+
     return result;
 }
 
@@ -434,7 +496,7 @@ function makeDraggable(evt) {
         const pathContainer = selectedElement.parentNode;
         const ids = pathContainer.id.split("_")[1];
         const startId = ids.split("-")[0];
-        const endId = ids.split("-")[1]; 
+        const endId = ids.split("-")[1];
         const startNode = graph[startId];
         const endNode = graph[endId];
 
@@ -448,7 +510,7 @@ function makeDraggable(evt) {
         const path = graph[startId].to.find(e => e.node == endId);
         const edgeOffset = path.offset / 2;
         dist -= edgeOffset;
-        
+
         if (dist < TEXT_THRESHOLD && dist > -TEXT_THRESHOLD) {
             path.textOffset = dist;
             selectedElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
@@ -532,7 +594,7 @@ function makeDraggable(evt) {
         const startAngle = getVectorFromAngle(angle);
         const length = NODE_RADIUS + START_SHIFT;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
-    
+
         selectedElement.childNodes[0].setAttributeNS(null, "d", dValue);
         selectedElement.childNodes[1].setAttributeNS(null, "d", dValue);
     }
@@ -621,13 +683,13 @@ function makeDraggable(evt) {
                 switch (child.tagName) {
                     case "path":
                         child.setAttributeNS(null, "d", dValue);
-                        child.setAttributeNS(null, "transform", `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`);  
+                        child.setAttributeNS(null, "transform", `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`);
                         break;
                     case "text":
                         correctSelfEdgeText(child, id);
                         break;
                     default:
-                        console.error("Unhandeled tag found"); 
+                        console.error("Unhandeled tag found");
                 }
             }
         }
@@ -672,7 +734,7 @@ function correctEdges(pathList, id, to) {
             if (child.tagName == "path") {
                 child.setAttributeNS(null, "d", dValue);
             }
-            
+
             // redraw the label
             if (child.tagName == "text") {
                 const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
@@ -736,11 +798,11 @@ function getVectorAngle(vectorA, vectorB) {
 }
 
 function getAngle360Degree(baseVector, position) {
-    const vector = {x: position.x - baseVector.x, y: position.y - baseVector.y};
-    const angle = getVectorAngle(vector, {x: 1, y: 0});
+    const vector = { x: position.x - baseVector.x, y: position.y - baseVector.y };
+    const angle = getVectorAngle(vector, { x: 1, y: 0 });
     let angleDegree = angle * (180 / Math.PI);
-    const dot = getDotProduct(vector, {x: 0, y: 1});
-    
+    const dot = getDotProduct(vector, { x: 0, y: 1 });
+
     // correct the left side of the circle
     if (dot < 0) {
         angleDegree = (360 - angleDegree);
@@ -750,20 +812,20 @@ function getAngle360Degree(baseVector, position) {
 }
 
 function getVectorFromAngle(angle) {
-    const angleBase = {x: 0, y: -1};
+    const angleBase = { x: 0, y: -1 };
 
     const radiantAngle = (360 - angle) * (Math.PI / 180);
     const vector = {
         x: angleBase.x * Math.cos(radiantAngle) + angleBase.y * Math.sin(radiantAngle),
         y: angleBase.y * Math.cos(radiantAngle) - angleBase.x * Math.sin(radiantAngle)
     }
-    
+
     return getUnitVector(vector);
 }
 
 function downloadSVG() {
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
-    var svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
+    var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
     var svgUrl = URL.createObjectURL(svgBlob);
     var downloadLink = document.getElementsByTagName("a")[0];
     downloadLink.href = svgUrl;

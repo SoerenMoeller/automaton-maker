@@ -27,7 +27,7 @@ aside {
     height: 100%;
 }
 
-button {
+.addButton {
     background-color: #213A73;
     border-color: #4D6BB0;
     color: white;
@@ -37,7 +37,7 @@ button {
     height: 100%;
 }
 
-button:hover {
+.addButton:hover {
     background-color: #424E99;
 }
 
@@ -46,13 +46,19 @@ input[type=text] {
     width: 30%;
 }
 
+input[type=checkbox] {
+    transform: scale(2);
+}
+
 .draggable {
     cursor: move;
 }
 
 .container {
     width: 100%;
-    height: 50%;
+    max-height: 50%;
+
+    overflow: auto;
 }
 
 .containerHeader {
@@ -65,7 +71,6 @@ input[type=text] {
 
 .listContainer {
     height: 100%;
-    background-color: lightgrey;
     padding: 1rem 0;
 
     display: flex;
@@ -83,5 +88,30 @@ input[type=text] {
 
     display: flex;
     justify-content: space-between;
+    align-items: center;
+}
+
+.settingsContainer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.deleteButton {
+    height: 1.5rem;
+    width: 1.5rem;
+
+    background-color: #FA7676;
+    border-color: grey;
+    border-radius: 3px;
+    color: black;
+
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+
+    display: flex;
+    justify-content: center;
     align-items: center;
 }
