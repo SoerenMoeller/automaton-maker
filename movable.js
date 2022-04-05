@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", main);
 
+let selectedDragElement = false;
 let selectedElement = false;
 const NODE_RADIUS = 4;
 const START_SHIFT = 7;
@@ -8,14 +9,15 @@ const SELF_EDGE_TEXT_DISTANCE = 13;
 const TEXT_THRESHOLD = 3;
 let textSize = 2.5;
 let subTextSize = 1.5;
-let id = 0;
+let highestId = 0;
 let shiftPressed = false;
+const COLOR_MARKED = "#34ebeb";
 
 /*
 let graph = {
     0: {
         desc: "q_1",
-        attribute: "start",
+        attributes: ["start"],
         startAngle: 270,
         coords: {
             x: 20,
@@ -121,14 +123,15 @@ function main() {
     console.assert(elements.length > 0, "svg not found");
     svg = elements[0]
 
-    //buildSVG(svg);
+    resetSVG();
 
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 }
 
 function handleKeyUpEvent(event) {
-    console.log("up");
+    shiftPressed = false;
+    controlPressed = false;
 }
 
 function handleKeyEvent(event) {
@@ -139,16 +142,65 @@ function handleKeyEvent(event) {
         case "ShiftRight":
         case "ShiftLeft":
             shiftPressed = true;
+            controlPressed = false;
+            break;
+        case "ControlLeft":
+        case "ControlRight":
+            controlPressed = true;
+            shiftPressed = false;
+            break;
+        case "Escape":
+            unselectAll();
+            break;
+        case "Delete":
+        case "Backspace":
+            removeElement();
+            break;
+        case "KeyS":
+            toggleStartNode();
+            break;
+        case "KeyE":
+            toggleEndNode();
             break;
         default:
             console.log(event.code);
-      }
+    }
+}
+
+function toggleEndNode() {
+    if (!selectedElement || selectedElement.id.split("_")[0] != "node") return;
+
+    const nodeId = selectedElement.id.split("_")[1];
+    const node = graph[nodeId];
+    if (node.attributes.includes("end")) {
+        delete node.attributes[node.attributes.indexOf("end")];
+    } else {
+        node.attributes.push("end");
+    }
+
+    buildSVG(svg);
+}
+
+function toggleStartNode() {
+    if (!selectedElement || selectedElement.id.split("_")[0] != "node") return;
+
+    const nodeId = selectedElement.id.split("_")[1];
+    const node = graph[nodeId];
+    if (node.attributes.includes("start")) {
+        delete node.attributes[node.attributes.indexOf("start")];
+        delete node.startAngle;
+    } else {
+        node.attributes.push("start");
+        node.startAngle = 270;
+    }
+
+    buildSVG(svg);
 }
 
 function addNode() {
     let node = {
         desc: "",
-        attribute: "",
+        attributes: [],
         coords: {
             x: 10,
             y: 10
@@ -156,9 +208,86 @@ function addNode() {
         to: []
     }
 
-    graph[id++] = node;
+    graph[highestId++] = node;
 
     buildSVG(document.getElementsByTagName("svg")[0]);
+}
+
+function removeElement() {
+    if (!selectedElement) return;
+
+    const id = selectedElement.id;
+    const name = id.split("_")[0];
+
+    switch (name) {
+        case "node":
+            removeNode(selectedElement);
+            break;
+        case "path":
+            removePath(selectedElement);
+            break;
+        default:
+            console.error("Trying to delete unknown type");
+    }
+}
+
+function removeNode(node) {
+    // remove from logic
+    const nodeId = node.id.split("_")[1];
+    delete graph[nodeId];
+
+    // remove from view
+    node.parentNode.removeChild(node);
+}
+
+function unselectAll() {
+    selectedElement = false;
+
+    // unmark all nodes
+    for (let nodeId in graph) {
+        setNodeColor(nodeId, "black");
+    }
+}
+
+function resetSVG() {
+    const svg = document.getElementsByTagName("svg")[0];
+
+    svg.innerHTML = "";
+
+    // make the arrowheads
+    const defs = getNode("defs", {});
+    const marker = getNode("marker", {
+        id: "arrow",
+        markerWidth: 16,
+        markerHeight: 10,
+        refX: 16 + 10 * NODE_RADIUS - 1,
+        refY: 5,
+        orient: "auto"
+    });
+    const polygon = getNode("polygon", {
+        points: "0 0, 16 5, 0 10"
+    });
+    const markerSelf = getNode("marker", {
+        id: "selfarrow",
+        markerWidth: 16,
+        markerHeight: 16,
+        refX: 23,
+        refY: -7.5,
+        orient: "auto"
+    });
+    const polygonSelf = getNode("polygon", {
+        points: "0 13, 11 0, 10 16"
+    });
+    marker.appendChild(polygon);
+    markerSelf.appendChild(polygonSelf);
+    defs.appendChild(marker);
+    defs.appendChild(markerSelf);
+    svg.appendChild(defs);
+
+    // style
+    const style = getNode("style", {});
+    style.innerHTML = `text {font: italic ${textSize}px sans-serif; user-select: none;} tspan {font: italic ${subTextSize}px sans-serif; user-select: none;}`
+    svg.appendChild(style);
 }
 
 /* ========================================== Building svg methods ========================================== */
@@ -219,7 +348,7 @@ function buildNode(svg, id) {
     });
 
     // create starting arrow
-    if (node.attribute == "start") {
+    if (node.attributes.includes("start")) {
         const startAngle = getVectorFromAngle(node.startAngle);
         const length = NODE_RADIUS + START_SHIFT;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
@@ -255,7 +384,7 @@ function buildNode(svg, id) {
         stroke_width: 0.1,
         fill: "white"
     }));
-    if (node.attribute == "end") {
+    if (node.attributes.includes("end")) {
         container.appendChild(getNode("circle", {
             class: "draggable",
             cx: node.coords.x,
@@ -412,13 +541,43 @@ function parseText(input) {
     return result;
 }
 
+function setNodeColor(nodeId, color) {
+    const selector = `node_${nodeId}`;
+    const node = document.getElementById(selector);
+
+    for (let child of node.childNodes) {
+        if (child.tagName == "circle") {
+            child.setAttributeNS(null, "stroke", color);
+        }
+    }
+}
+
 /* ========================================== Dragging logic ========================================== */
 function makeDraggable(evt) {
     var svg = evt.target;
+    svg.addEventListener('mousedown', mouseDown);
     svg.addEventListener('mousedown', startDrag);
     svg.addEventListener('mousemove', drag);
     svg.addEventListener('mouseup', endDrag);
-    svg.addEventListener('mouseleave', endDrag);
+    //svg.addEventListener('mouseleave', endDrag);
+
+    function mouseDown(evt) {
+        // check if node is selected
+        const target = evt.target;
+        const id = target.parentNode.id;
+        if (target.classList.contains("draggable") && id.includes("node")) {
+            // select the node
+            selectedElement = target.parentNode;
+
+            // unmark all nodes
+            for (let nodeId in graph) {
+                setNodeColor(nodeId, "black");
+            }
+
+            // mark selected node
+            setNodeColor(id.split("_")[1], COLOR_MARKED);
+        }
+    }
 
     function startDrag(evt) {
         let elem = evt.target.tagName !== "tspan" ? evt.target : evt.target.parentNode;
@@ -427,9 +586,9 @@ function makeDraggable(evt) {
             let parent = elem.parentNode;
 
             if (elem.tagName == "text" && parent.id.includes("path")) {
-                selectedElement = elem;
+                selectedDragElement = elem;
             } else if (parent && parent.tagName == "g") {
-                selectedElement = parent;
+                selectedDragElement = parent;
             } else {
                 console.error("Wrong element clickable");
             }
@@ -437,14 +596,14 @@ function makeDraggable(evt) {
     }
 
     function drag(evt) {
-        if (selectedElement) {
+        if (selectedDragElement) {
             evt.preventDefault();
             const coord = getMousePosition(evt);
-            let prefix = selectedElement.id.split("_")[0];
-            const suffix = selectedElement.id.split("_")[1];
+            let prefix = selectedDragElement.id.split("_")[0];
+            const suffix = selectedDragElement.id.split("_")[1];
 
             // if a text is selected, we want to change the offset
-            if (selectedElement.tagName === "text") {
+            if (selectedDragElement.tagName === "text") {
                 prefix = "text";
             }
 
@@ -474,7 +633,7 @@ function makeDraggable(evt) {
 
     function dragText(coord) {
         // get the id of the node
-        const pathContainer = selectedElement.parentNode;
+        const pathContainer = selectedDragElement.parentNode;
         const ids = pathContainer.id.split("_")[1];
         const startId = ids.split("-")[0];
         const endId = ids.split("-")[1];
@@ -494,14 +653,14 @@ function makeDraggable(evt) {
 
         if (dist < TEXT_THRESHOLD && dist > -TEXT_THRESHOLD) {
             path.textOffset = dist;
-            selectedElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
-            selectedElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
+            selectedDragElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
+            selectedDragElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
         }
     }
 
     function dragSelfEdge(coord) {
         // get the id of the node
-        const ids = selectedElement.id.split("_")[1];
+        const ids = selectedDragElement.id.split("_")[1];
         const nodeId = ids.split("-")[0];
         const node = graph[nodeId];
 
@@ -509,7 +668,7 @@ function makeDraggable(evt) {
         const selfPath = node.to.find(e => e.node == nodeId);
         selfPath.angle = angle;
 
-        for (let child of selectedElement.childNodes) {
+        for (let child of selectedDragElement.childNodes) {
             switch (child.tagName) {
                 case "path":
                     child.setAttributeNS(null, "transform", `rotate(${angle}, ${node.coords.x}, ${node.coords.y})`);
@@ -525,7 +684,7 @@ function makeDraggable(evt) {
 
     function dragEdge(coord) {
         // get the id of the node
-        const ids = selectedElement.id.split("_")[1];
+        const ids = selectedDragElement.id.split("_")[1];
         const startId = ids.split("-")[0];
         const endId = ids.split("-")[1];
 
@@ -551,7 +710,7 @@ function makeDraggable(evt) {
         const textOffset = startNode.to.find(e => e.node == endId).textOffset;
 
         const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
-        for (let child of selectedElement.childNodes) {
+        for (let child of selectedDragElement.childNodes) {
             if (child.tagName == "path") {
                 child.setAttributeNS(null, "d", dValue);
             }
@@ -565,7 +724,7 @@ function makeDraggable(evt) {
 
     function dragStartEdge(coord) {
         // get the id of the node
-        const id = parseInt(selectedElement.id.split("_")[1]);
+        const id = parseInt(selectedDragElement.id.split("_")[1]);
         const node = graph[id];
 
         const angle = getAngle360Degree(node.coords, coord);
@@ -576,13 +735,13 @@ function makeDraggable(evt) {
         const length = NODE_RADIUS + START_SHIFT;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
-        selectedElement.childNodes[0].setAttributeNS(null, "d", dValue);
-        selectedElement.childNodes[1].setAttributeNS(null, "d", dValue);
+        selectedDragElement.childNodes[0].setAttributeNS(null, "d", dValue);
+        selectedDragElement.childNodes[1].setAttributeNS(null, "d", dValue);
     }
 
     function dragNode(coord) {
         // get the id of the node
-        const id = parseInt(selectedElement.id.split("_")[1]);
+        const id = parseInt(selectedDragElement.id.split("_")[1]);
         const node = graph[id];
 
         // prevent going over the edge
@@ -606,13 +765,13 @@ function makeDraggable(evt) {
         }
 
         // move the text and the circle
-        for (let child of selectedElement.childNodes) {
+        for (let child of selectedDragElement.childNodes) {
             child.setAttributeNS(null, child.tagName == "circle" ? "cx" : "x", coord.x);
             child.setAttributeNS(null, child.tagName == "circle" ? "cy" : "y", coord.y);
         }
 
         // change the path of start
-        if (graph[id].attribute == "start") {
+        if (graph[id].attributes.includes("start")) {
             const selector = `start_${id}`;
             const pathContainer = document.getElementById(selector);
 
@@ -644,7 +803,6 @@ function makeDraggable(evt) {
             }
         }
 
-        console.log(pathTo);
         // remove the self edge
         if (pathTo.includes(id)) {
             const indexTo = pathTo.indexOf(id);
@@ -681,7 +839,7 @@ function makeDraggable(evt) {
     }
 
     function endDrag(evt) {
-        selectedElement = null;
+        selectedDragElement = null;
     }
 
     function getMousePosition(evt) {
