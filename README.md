@@ -14,6 +14,7 @@ In general, NFAs, DFAs and TMs should be supported.
 - No edge offset drawn on load
 - Mockup not updated
 - Arrow offset
+- Wrong arrowhead on selected self edges
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code

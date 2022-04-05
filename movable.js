@@ -44,6 +44,18 @@ function main() {
 
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
+
+    const addButton = document.getElementById("addButton");
+    const downloadButton = document.getElementsByTagName("a")[0];
+    const resetButton = document.getElementById("resetContainer");
+    addButton.addEventListener("click", e => addNode());
+    downloadButton.addEventListener("click", e => downloadSVG());
+    resetButton.addEventListener("click", e => resetAll());
+}
+
+function resetAll() {
+    graph = {};
+    buildSVG();
 }
 
 function handleKeyUpEvent(event) {
@@ -363,7 +375,7 @@ function buildNode(id) {
     // create the text
     const textNode = getTextNode(node.coords, node.desc, true);
     container.appendChild(textNode);
-    
+
     svg.appendChild(container);
 }
 
@@ -1019,12 +1031,14 @@ function getVectorFromAngle(angle) {
 }
 
 function downloadSVG() {
+    unselectAll();
+
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
     var svgUrl = URL.createObjectURL(svgBlob);
     var downloadLink = document.getElementsByTagName("a")[0];
     downloadLink.href = svgUrl;
-    downloadLink.download = "test.svg";
+    downloadLink.download = "automaton.svg";
 }
 
 function getKeyByValue(object, value) {
