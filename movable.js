@@ -32,109 +32,6 @@ const ACTION = {
 
 // used to give every element an unique id
 let highestId = 0;
-
-/*
-let graph = {
-    0: {
-        desc: "q_1",
-        attributes: ["start"],
-        startAngle: 270,
-        coords: {
-            x: 20,
-            y: 20
-        },
-        to: [
-            {
-                node: 4,
-                desc: "b",
-                offset: 0,
-                textOffset: -2
-            }, 
-            {
-                node: 1,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }
-        ]
-    },
-    1: {
-        desc: "q_2",
-        attribute: "",
-        coords: {
-            x: 40,
-            y: 20
-        },
-        to: [
-            {
-                node: 1,
-                desc: "b",
-                angle: 0
-            },
-            {
-                node: 2,
-                desc: "b",
-                offset: 0,
-                textOffset: -2
-            }
-        ]
-    },
-    2: {
-        desc: "q_3",
-        attribute: "",
-        coords: {
-            x: 60,
-            y: 20
-        },
-        to: [
-            {
-                node: 1,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            },
-            {
-                node: 3,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }
-        ]
-    },
-    3: {
-        desc: "q_4",
-        attribute: "end",
-        coords: {
-            x: 80,
-            y: 20
-        },
-        to: [
-            {
-                node: 3,
-                desc: "a, b",
-                angle: 0
-            }
-        ]
-    },
-    4: {
-        desc: "q_5",
-        attribute: "",
-        coords: {
-            x: 20,
-            y: 40
-        },
-        to: [
-            {
-                node: 3,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }
-        ]
-    }
-}
-*/
-
 let graph = {};
 
 function main() {
@@ -241,23 +138,63 @@ function removeElement() {
 
     switch (name) {
         case "node":
-            removeNode(selectedElement);
+            removeNode();
             break;
         case "path":
-            removePath(selectedElement);
+            removePath();
             break;
         default:
             console.error("Trying to delete unknown type");
     }
+
+    selectedElement = null;
 }
 
-function removeNode(node) {
-    // remove from logic
-    const nodeId = node.id.split("_")[1];
+function removePath() {
+    const ids = selectedElement.id.split("_")[1].split("-");
+    const fromId = ids[0];
+    const toId = ids[1];
+
+    // remove edge from logic
+    graph[fromId].to = graph[fromId].to.filter(e => e.node != toId);
+
+    // remove from view
+    selectedElement.parentNode.removeChild(selectedElement);
+}
+
+function removeNode() {
+    const nodeId = selectedElement.id.split("_")[1];
+
+    // fetch edges related to the node
+    let edgeFrom = getEdgesFromNode(nodeId);
+    const edgeTo = getEdgesToNode(nodeId);
+
+    // remove self path from one of the to avoid double deleting it
+    edgeFrom = edgeFrom.filter(e => e != nodeId);
+
+    removePathFromView(edgeFrom, nodeId, true);
+    removePathFromView(edgeTo, nodeId, false);
+
+    // remove edges from logic
+    removeEdgesToNode(nodeId);
+
+    // remove node from logic
     delete graph[nodeId];
 
     // remove from view
-    node.parentNode.removeChild(node);
+    selectedElement.parentNode.removeChild(selectedElement);
+}
+
+function removePathFromView(edges, id, to) {
+    for (let nodeId of edges) {
+        const fromId = to ? id : nodeId;
+        const toId = to ? nodeId : id;
+
+        const selector = `path_${fromId}-${toId}`;
+        const path = document.getElementById(selector);
+
+        path.parentNode.removeChild(path);
+    }
 }
 
 function unselectAll() {
@@ -266,6 +203,12 @@ function unselectAll() {
     // unmark all nodes
     for (let nodeId in graph) {
         setNodeColor(nodeId, "black");
+    }
+
+    for (let fromId in graph) {
+        for (let toId in graph) {
+            setPathColor(fromId, toId, "black");
+        }
     }
 }
 
@@ -282,7 +225,7 @@ function resetSVG() {
         markerHeight: 10,
         refX: 16 + 10 * SIZE.nodeRadius - 1,
         refY: 5,
-        orient: "auto"
+        orient: "auto",
     });
     const polygon = getNode("polygon", {
         points: "0 0, 16 5, 0 10"
@@ -309,12 +252,26 @@ function resetSVG() {
     const polygonDefault = getNode("polygon", {
         points: "0 0, 16 5, 0 10"
     });
+    const markerSelected = getNode("marker", {
+        id: "arrowSelected",
+        markerWidth: 16,
+        markerHeight: 10,
+        refX: 16 + 10 * SIZE.nodeRadius - 1,
+        refY: 5,
+        orient: "auto",
+        fill: COLOR_MARKED
+    });
+    const polygonSelected = getNode("polygon", {
+        points: "0 0, 16 5, 0 10"
+    });
     marker.appendChild(polygon);
     markerSelf.appendChild(polygonSelf);
     markerDefault.appendChild(polygonDefault);
+    markerSelected.appendChild(polygonSelected);
     defs.appendChild(marker);
     defs.appendChild(markerSelf);
     defs.appendChild(markerDefault);
+    defs.appendChild(markerSelected);
     svg.appendChild(defs);
 
     // style
@@ -559,6 +516,17 @@ function setNodeColor(nodeId, color) {
     }
 }
 
+function setPathColor(fromId, toId, color="black") {
+    const selector = `path_${fromId}-${toId}`;
+    const node = document.getElementById(selector);
+
+    if (!node) return;
+
+    // the first child is transparent
+    node.childNodes[1].setAttributeNS(null, "stroke", color);
+    node.childNodes[1].setAttributeNS(null, "marker-end", color == "black" ? "url(#arrow)" : "url(#arrowSelected)");
+}
+
 /* ========================================== Dragging logic ========================================== */
 function makeDraggable(evt) {
     var svg = evt.target;
@@ -573,23 +541,45 @@ function makeDraggable(evt) {
         // check if node is selected
         const target = evt.target;
         const id = target.parentNode.id;
-        if (target.classList.contains("draggable") && id.includes("node")) {
-            // select the node
-            selectedElement = target.parentNode;
-
-            // unmark all nodes
-            for (let nodeId in graph) {
-                setNodeColor(nodeId, "black");
+        const prefix = id.split("_")[0];
+        if (target.classList.contains("draggable")) {
+            switch (prefix) {
+                case "node":
+                    selectNode(target, id);
+                    break;
+                case "path":
+                    selectEdge(target, id);
+                    break;
+                default:
+                    console.log("Unknown type selected");
             }
+        }
+    }
 
-            ACTION.draw = KEYS.control;
-            if (KEYS.control) {
-                ACTION.drawStartNodeId = id.split("_")[1];
-                return;
-            }
+    function selectEdge(target, id) {
+        unselectAll();
 
-            // mark selected node
-            setNodeColor(id.split("_")[1], COLOR_MARKED);
+        // select the node
+        selectedElement = target.parentNode;
+        
+        // mark selected node
+        const ids = id.split("_")[1].split("-");
+        setPathColor(ids[0], ids[1], COLOR_MARKED);
+    }
+
+    function selectNode(target, id) {
+        unselectAll();
+
+        // select the node
+        selectedElement = target.parentNode;
+
+        // mark selected node
+        setNodeColor(id.split("_")[1], COLOR_MARKED);
+
+        ACTION.draw = KEYS.control;
+        if (KEYS.control) {
+            ACTION.drawStartNodeId = id.split("_")[1];
+            return;
         }
     }
 
@@ -877,7 +867,7 @@ function makeDraggable(evt) {
 
                     if (!existentEdge) {
                         const newEdge = {
-                            node: nodeId,
+                            node: parseInt(nodeId),
                             desc: ""
                         }
 
@@ -889,7 +879,7 @@ function makeDraggable(evt) {
                         }
 
                         node.to.push(newEdge);
-                        
+
                         buildSVG();
                     }
                     break;
@@ -1036,4 +1026,29 @@ function downloadSVG() {
 
 function getKeyByValue(object, value) {
     return Object.keys(object).find(key => object[key] === value);
+}
+
+function getEdgesFromNode(id) {
+    return graph[id].to.map(e => e.node);
+}
+
+function getEdgesToNode(id) {
+    const edges = [];
+    for (let nodeId in graph) {
+        let to = graph[nodeId].to;
+        for (let otherNode in to) {
+            let otherId = to[otherNode].node;
+            if (otherId == id) {
+                edges.push(parseInt(nodeId));
+            }
+        }
+    }
+
+    return edges;
+}
+
+function removeEdgesToNode(id) {
+    for (let nodeId in graph) {
+        graph[nodeId].to = graph[nodeId].to.filter(e => e.node != id)
+    }
 }
