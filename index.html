@@ -16,7 +16,18 @@
 
 <body>
   <main>
+    <div id="top">
+      <button id="addButton">add node</button>
+      <div class="flow-right"></div>
+    </div>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" onload="makeDraggable(evt)"></svg>
+    <div id="bottom">
+      <button id="downloadButton">Download</button>
+      <div id="resetContainer">
+        <p>Reset</p>
+        <img src="img/reload.svg" alt="reload_img">
+      </div>
+    </div>
   </main>
   <a onclick="downloadSVG()">Download</a>
 </body>

@@ -1,5 +1,10 @@
 body {
     font-family: 'Open Sans', sans-serif;
+    font-size: 0.9rem;
+}
+
+p {
+    font-size: 1rem;
 }
 
 main {
@@ -11,13 +16,15 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
+
+    flex-direction: column;
 }
 
 svg {
-    min-width: 90vmin;
-    min-height: 90vmin;
-    width: 90vmin;
-    height: 90vmin;
+    min-width: 80vmin;
+    min-height: 80vmin;
+    width: 80vmin;
+    height: 80vmin;
 
     background-color: rgb(235, 235, 235);
     border: 1px solid rgb(163, 192, 246);
@@ -31,6 +38,40 @@ img {
     border: 1px solid black;
 
     cursor: pointer;
+}
+
+button {
+    color: white;
+    background-color: #4D6BB0;
+    border: 1px solid #213A73;
+    border-radius: 5px;
+
+    width: 12%;
+    height: 35%;
+}
+
+button:active {
+    background-color: #354E87;
+}
+
+#top, #bottom {
+    height: 10vmin;
+    min-height: 10vmin;
+    width: 80vmin;
+
+    display: flex;
+    align-items: center;
+}
+
+#bottom {
+    justify-content: space-between;
+}
+
+#resetContainer {
+    display: flex;
+    align-items: center;
+
+    gap: 0.5rem;
 }
 
 .draggable {

@@ -33,13 +33,13 @@ const ACTION = {
 // used to give every element an unique id
 let highestId = 0;
 let graph = {};
+let svg;
 
 function main() {
     // find the svg to draw in
-    elements = document.getElementsByTagName("svg");
-    console.assert(elements.length > 0, "svg not found");
-    svg = elements[0]
+    svg = document.getElementsByTagName("svg")[0];
 
+    // init the svg
     resetSVG();
 
     document.addEventListener("keydown", handleKeyEvent);
@@ -363,7 +363,7 @@ function buildNode(id) {
     // create the text
     const textNode = getTextNode(node.coords, node.desc, true);
     container.appendChild(textNode);
-
+    
     svg.appendChild(container);
 }
 
@@ -379,8 +379,11 @@ function buildLines(id) {
             id: `path_${id}-${nodeId}`
         })
 
-        // initially the lines are straight
-        let dValue = `M${coords.x} ${coords.y} L${otherCoords.x} ${otherCoords.y}`;
+        // create line
+        const middle = getMiddleOfVector(coords, otherCoords);
+        const normalVector = getUnitVector(getNormalVector(coords, otherCoords));
+        const dist = node.to[otherNode].offset;
+        let dValue = `M${coords.x} ${coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${otherCoords.x} ${otherCoords.y}`;
 
         // self-edge
         if (id == nodeId) {
@@ -409,8 +412,8 @@ function buildLines(id) {
             const middle = getMiddleOfVector(node.coords, otherCoords);
             const offset = node.to.find(e => e.node == nodeId).textOffset;
             const textCoords = {
-                x: middle.x + normalVector.x * offset,
-                y: middle.y + normalVector.y * offset
+                x: middle.x + normalVector.x * (dist / 2 + offset),
+                y: middle.y + normalVector.y * (dist / 2 + offset)
             }
 
             const textNode = getTextNode(textCoords, node.to[otherNode].desc, true);
