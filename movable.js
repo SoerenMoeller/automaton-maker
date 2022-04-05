@@ -11,6 +11,8 @@ let textSize = 2.5;
 let subTextSize = 1.5;
 let highestId = 0;
 let shiftPressed = false;
+let controlPressed = false;
+let drawPath = false;
 const COLOR_MARKED = "#34ebeb";
 
 /*
@@ -278,57 +280,44 @@ function resetSVG() {
     const polygonSelf = getNode("polygon", {
         points: "0 13, 11 0, 10 16"
     });
+    const markerDefault = getNode("marker", {
+        id: "defaultMarker",
+        markerWidth: 16,
+        markerHeight: 10,
+        refX: 0,
+        refY: 5,
+        orient: "auto"
+    });
+    const polygonDefault = getNode("polygon", {
+        points: "0 0, 16 5, 0 10"
+    });
     marker.appendChild(polygon);
     markerSelf.appendChild(polygonSelf);
+    markerDefault.appendChild(polygonDefault);
     defs.appendChild(marker);
     defs.appendChild(markerSelf);
+    defs.appendChild(markerDefault);
     svg.appendChild(defs);
 
     // style
     const style = getNode("style", {});
     style.innerHTML = `text {font: italic ${textSize}px sans-serif; user-select: none;} tspan {font: italic ${subTextSize}px sans-serif; user-select: none;}`
     svg.appendChild(style);
+
+    // add default path for later usage
+    svg.appendChild(getNode("path", {
+        id: "defaultPath",
+        d: "",
+        stroke: "black",
+        stroke_width: 0.1,
+        marker_end: "url(#defaultMarker)",
+        fill: "none",
+    }));
 }
 
 /* ========================================== Building svg methods ========================================== */
 function buildSVG(svg) {
-    // removes content of svg
-    svg.innerHTML = "";
-
-    // make the arrowhead
-    const defs = getNode("defs", {});
-    const marker = getNode("marker", {
-        id: "arrow",
-        markerWidth: 16,
-        markerHeight: 10,
-        refX: 16 + 10 * NODE_RADIUS - 1,
-        refY: 5,
-        orient: "auto"
-    });
-    const polygon = getNode("polygon", {
-        points: "0 0, 16 5, 0 10"
-    });
-    const markerSelf = getNode("marker", {
-        id: "selfarrow",
-        markerWidth: 16,
-        markerHeight: 16,
-        refX: 23,
-        refY: -7.5,
-        orient: "auto"
-    });
-    const polygonSelf = getNode("polygon", {
-        points: "0 13, 11 0, 10 16"
-    });
-    marker.appendChild(polygon);
-    markerSelf.appendChild(polygonSelf);
-    defs.appendChild(marker);
-    defs.appendChild(markerSelf);
-    svg.appendChild(defs);
-
-    // style
-    const style = getNode("style", {});
-    style.innerHTML = `text {font: italic ${textSize}px sans-serif; user-select: none;} tspan {font: italic ${subTextSize}px sans-serif; user-select: none;}`
-    svg.appendChild(style);
+    resetSVG();
 
     // render the lines first
     for (let node in graph) {
@@ -558,8 +547,9 @@ function makeDraggable(evt) {
     svg.addEventListener('mousedown', mouseDown);
     svg.addEventListener('mousedown', startDrag);
     svg.addEventListener('mousemove', drag);
+    svg.addEventListener('mousemove', draw);
     svg.addEventListener('mouseup', endDrag);
-    //svg.addEventListener('mouseleave', endDrag);
+    svg.addEventListener('mouseleave', endDrag);
 
     function mouseDown(evt) {
         // check if node is selected
@@ -572,6 +562,11 @@ function makeDraggable(evt) {
             // unmark all nodes
             for (let nodeId in graph) {
                 setNodeColor(nodeId, "black");
+            }
+
+            if (controlPressed) {
+                drawPath = graph[id.split("_")[1]];
+                return;
             }
 
             // mark selected node
@@ -595,8 +590,21 @@ function makeDraggable(evt) {
         }
     }
 
+    function draw(evt) {
+        if (!drawPath) return;
+
+        evt.preventDefault();
+        const coord = getMousePosition(evt);
+        const startCoords = drawPath.coords;
+
+        const defaultPath = document.getElementById("defaultPath");
+        const dValue = `M${startCoords.x} ${startCoords.y} L${coord.x} ${coord.y}`;
+
+        defaultPath.setAttributeNS(null, "d", dValue);
+    }
+
     function drag(evt) {
-        if (selectedDragElement) {
+        if (selectedDragElement && !drawPath) {
             evt.preventDefault();
             const coord = getMousePosition(evt);
             let prefix = selectedDragElement.id.split("_")[0];
@@ -839,7 +847,29 @@ function makeDraggable(evt) {
     }
 
     function endDrag(evt) {
+        if (drawPath) {
+            // mount the path if on another node (or else throw it away)
+            const coord = getMousePosition(evt);
+            for (let nodeId in graph) {
+                if (getDistance(coord, graph[nodeId].coords) < NODE_RADIUS) {
+                    console.log(drawPath);
+                    drawPath.to.push({
+                        textOffset: -2,
+                        offset: 0,
+                        node: nodeId,
+                        desc: ""
+                    });
+                    buildSVG(svg);
+                    break;
+                }
+            }
+
+            const defaultPath = document.getElementById("defaultPath");
+            defaultPath.setAttributeNS(null, "d", "")
+        }
+
         selectedDragElement = null;
+        drawPath = false;
     }
 
     function getMousePosition(evt) {
@@ -970,3 +1000,7 @@ function downloadSVG() {
     downloadLink.href = svgUrl;
     downloadLink.download = "test.svg";
 }
+
+function getKeyByValue(object, value) {
+    return Object.keys(object).find(key => object[key] === value);
+  }
