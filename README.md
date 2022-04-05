@@ -11,6 +11,10 @@ The functionality for labels could be added, to support LTS's.
 - may add support for multiple textlines (edge labels)
 - may add text offset to self nodes
 
+## Bugs
+- Deleting nodes leaves the edges
+- No edge offset drawn on load
+
 ## Hot features to come
 - Convert the automaton into LaTeX-Code
 - Convert the automaton into img-File
@@ -20,6 +24,7 @@ The functionality for labels could be added, to support LTS's.
 - a: Create a node
 - s: Make selected node a starting node
 - e: Make selected node an ending node
+- Ctrl: Draw edge (from selected node)
 - Del/Back: Remove a selected node
 - Esc: Unselect 
 
