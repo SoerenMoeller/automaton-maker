@@ -30,6 +30,40 @@ const ACTION = {
     drawStartNodeId: -1
 }
 
+const CONSTANTS = {
+    path: "path",
+    circle: "circle",
+    text: "text",
+    node: "node",
+    polygon: "polygon",
+    defs: "defs",
+    style: "style",
+    start: "start",
+    end: "end",
+    marker: "marker",
+    defaultMarker: "defaultMarker",
+    defaultPath: "defaultPath",
+    arrow: "arrow",
+    selfarrow: "selfarrow",
+    arrowSelected: "arrowSelected",
+    selfarrowSelected: "selfarrowSelected",
+    black: "black",
+    draggable: "draggable",
+    g: "g",
+    tspan: "tspan",
+    sub: "sub",
+    super: "super",
+    none: "none",
+    white: "white",
+    transparent: "transparent",
+    markerEnd: "marker-end",
+    id: "id",
+    class: "class",
+    stroke: "stroke",
+    middle: "middle",
+    central: "central"
+}
+
 // used to give every element an unique id
 let highestId = 0;
 let graph = {};
@@ -45,17 +79,17 @@ function main() {
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 
-    const addButton = document.getElementById("addButton");
-    const downloadButton = document.getElementsByTagName("a")[0];
     const resetButton = document.getElementById("resetContainer");
-    addButton.addEventListener("click", e => addNode());
-    downloadButton.addEventListener("click", e => downloadSVG());
+    const downloadButton = document.getElementsByTagName("a")[0];
+    const addButton = document.getElementById("addButton");
     resetButton.addEventListener("click", e => resetAll());
+    downloadButton.addEventListener("click", e => downloadSVG(downloadButton));
+    addButton.addEventListener("click", e => addNode());
 }
 
 function resetAll() {
     graph = {};
-    buildSVG();
+    resetSVG();
 }
 
 function handleKeyUpEvent(event) {
@@ -97,29 +131,29 @@ function handleKeyEvent(event) {
 }
 
 function toggleEndNode() {
-    if (!selectedElement || selectedElement.id.split("_")[0] != "node") return;
+    if (!selectedElement || selectedElement.id.split("_")[0] != CONSTANTS.node) return;
 
     const nodeId = selectedElement.id.split("_")[1];
     const node = graph[nodeId];
-    if (node.attributes.includes("end")) {
-        delete node.attributes[node.attributes.indexOf("end")];
+    if (node.attributes.includes(CONSTANTS.end)) {
+        delete node.attributes[node.attributes.indexOf(CONSTANTS.end)];
     } else {
-        node.attributes.push("end");
+        node.attributes.push(CONSTANTS.end);
     }
 
     buildSVG();
 }
 
 function toggleStartNode() {
-    if (!selectedElement || selectedElement.id.split("_")[0] != "node") return;
+    if (!selectedElement || selectedElement.id.split("_")[0] != CONSTANTS.node) return;
 
     const nodeId = selectedElement.id.split("_")[1];
     const node = graph[nodeId];
-    if (node.attributes.includes("start")) {
-        delete node.attributes[node.attributes.indexOf("start")];
+    if (node.attributes.includes(CONSTANTS.start)) {
+        delete node.attributes[node.attributes.indexOf(CONSTANTS.start)];
         delete node.startAngle;
     } else {
-        node.attributes.push("start");
+        node.attributes.push(CONSTANTS.start);
         node.startAngle = 270;
     }
 
@@ -149,10 +183,10 @@ function removeElement() {
     const name = id.split("_")[0];
 
     switch (name) {
-        case "node":
+        case CONSTANTS.node:
             removeNode();
             break;
-        case "path":
+        case CONSTANTS.path:
             removePath();
             break;
         default:
@@ -202,7 +236,7 @@ function removePathFromView(edges, id, to) {
         const fromId = to ? id : nodeId;
         const toId = to ? nodeId : id;
 
-        const selector = `path_${fromId}-${toId}`;
+        const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
         const path = document.getElementById(selector);
 
         path.parentNode.removeChild(path);
@@ -214,92 +248,105 @@ function unselectAll() {
 
     // unmark all nodes
     for (let nodeId in graph) {
-        setNodeColor(nodeId, "black");
+        setNodeColor(nodeId);
     }
 
     for (let fromId in graph) {
         for (let toId in graph) {
-            setPathColor(fromId, toId, "black");
+            setPathColor(fromId, toId);
         }
     }
 }
 
 function resetSVG() {
     const svg = document.getElementsByTagName("svg")[0];
-
     svg.innerHTML = "";
 
     // make the arrowheads
-    const defs = getNode("defs", {});
-    const marker = getNode("marker", {
-        id: "arrow",
-        markerWidth: 16,
-        markerHeight: 10,
-        refX: 16 + 10 * SIZE.nodeRadius - 1,
-        refY: 5,
-        orient: "auto",
-    });
-    const polygon = getNode("polygon", {
-        points: "0 0, 16 5, 0 10"
-    });
-    const markerSelf = getNode("marker", {
-        id: "selfarrow",
-        markerWidth: 16,
-        markerHeight: 16,
-        refX: 23,
-        refY: -7.5,
-        orient: "auto"
-    });
-    const polygonSelf = getNode("polygon", {
-        points: "0 13, 11 0, 10 16"
-    });
-    const markerDefault = getNode("marker", {
-        id: "defaultMarker",
-        markerWidth: 16,
-        markerHeight: 10,
-        refX: 16,
-        refY: 5,
-        orient: "auto"
-    });
-    const polygonDefault = getNode("polygon", {
-        points: "0 0, 16 5, 0 10"
-    });
-    const markerSelected = getNode("marker", {
-        id: "arrowSelected",
-        markerWidth: 16,
-        markerHeight: 10,
-        refX: 16 + 10 * SIZE.nodeRadius - 1,
-        refY: 5,
-        orient: "auto",
-        fill: COLOR_MARKED
-    });
-    const polygonSelected = getNode("polygon", {
-        points: "0 0, 16 5, 0 10"
-    });
-    marker.appendChild(polygon);
-    markerSelf.appendChild(polygonSelf);
-    markerDefault.appendChild(polygonDefault);
-    markerSelected.appendChild(polygonSelected);
-    defs.appendChild(marker);
-    defs.appendChild(markerSelf);
-    defs.appendChild(markerDefault);
-    defs.appendChild(markerSelected);
+    const defs = createSVGNode(CONSTANTS.defs);
+    const selfPolygon = "0 13, 11 0, 10 16";
+    const polygon = "0 0, 16 5, 0 10";
+    createMarker(defs, CONSTANTS.arrow, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, CONSTANTS.black, polygon);
+    createMarker(defs, CONSTANTS.arrowSelected, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR_MARKED, polygon);
+    createMarker(defs, CONSTANTS.selfarrow, 16, 16, 23, -7.5, CONSTANTS.black, selfPolygon);
+    createMarker(defs, CONSTANTS.selfarrowSelected, 16, 16, 23, -7.5, COLOR_MARKED, selfPolygon);
+    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, CONSTANTS.black, polygon);
     svg.appendChild(defs);
 
     // style
-    const style = getNode("style", {});
+    const style = createSVGNode(CONSTANTS.style);
     style.innerHTML = `text {font: italic ${SIZE.text}px sans-serif; user-select: none;} tspan {font: italic ${SIZE.subText}px sans-serif; user-select: none;}`
     svg.appendChild(style);
 
     // add default path for later usage
-    svg.appendChild(getNode("path", {
-        id: "defaultPath",
-        d: "",
-        stroke: "black",
+    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, CONSTANTS.black);
+}
+
+function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {
+    const marker = createSVGNode(CONSTANTS.marker, {
+        id: id,
+        markerWidth: width,
+        markerHeight: height,
+        refX: refX,
+        refY: refY,
+        fill: color,
+        orient: "auto"
+    });
+
+    const polygon = createSVGNode(CONSTANTS.polygon, {
+        points: polygonPoints
+    });
+
+    marker.appendChild(polygon);
+    parent.appendChild(marker);
+}
+
+function createPath(parent, id, dValue, stroke_width, marker, color, draggable=false) {
+    const path = createSVGNode(CONSTANTS.path, {
+        d: dValue,
+        stroke: color,
+        stroke_width: stroke_width,
+        fill: CONSTANTS.none
+    });
+
+    if (marker !== "") {
+        path.setAttributeNS(null, CONSTANTS.markerEnd, `url(#${marker})`);
+    }
+
+    if (id !== "") {
+        path.setAttributeNS(null, CONSTANTS.id, id);
+    }
+
+    if (draggable) {
+        path.setAttributeNS(null, CONSTANTS.class, CONSTANTS.draggable);
+    }
+
+    parent.appendChild(path);
+    return path;
+}
+
+function createCircle(parent, coords, radius) {
+    const circle = createSVGNode(CONSTANTS.circle, {
+        class: CONSTANTS.draggable,
+        cx: coords.x,
+        cy: coords.y,
+        r: radius,
+        stroke: CONSTANTS.black,
         stroke_width: 0.1,
-        marker_end: "url(#defaultMarker)",
-        fill: "none",
-    }));
+        fill: CONSTANTS.white
+    });
+
+    parent.appendChild(circle);
+    return circle;
+}
+
+function createContainer(parent, id) {
+    const container = createSVGNode(CONSTANTS.g, {
+        id: id
+    });
+
+    parent.appendChild(container);
+    return container;
 }
 
 /* ========================================== Building svg methods ========================================== */
@@ -318,65 +365,30 @@ function buildSVG() {
 }
 
 function buildNode(id) {
-    let node = graph[id];
-    let container = getNode("g", {
-        id: `node_${id}`
-    });
+    const node = graph[id];
+    const container = createContainer(svg, `${CONSTANTS.node}_${id}`)
 
     // create starting arrow
-    if (node.attributes.includes("start")) {
+    if (node.attributes.includes(CONSTANTS.start)) {
         const startAngle = getVectorFromAngle(node.startAngle);
         const length = SIZE.nodeRadius + DISTANCE.startEdge;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
         // make a thick invis line, to be able to click it nicely
-        const startContainer = getNode("g", {
-            id: `start_${id}`
-        })
-        startContainer.appendChild(getNode('path', {
-            class: "draggable",
-            d: dValue,
-            stroke: "transparent",
-            stroke_width: 1
-        }));
-        startContainer.appendChild(getNode('path', {
-            class: "draggable",
-            d: dValue,
-            stroke: "black",
-            stroke_width: 0.1,
-            marker_end: "url(#arrow)"
-        }));
-
-        container.appendChild(startContainer);
+        const startContainer = createContainer(container, `${CONSTANTS.start}_${id}`);
+        createPath(startContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
+        createPath(startContainer, "", dValue, 0.1, CONSTANTS.arrow, CONSTANTS.black, true);
     }
 
     // create the circle
-    container.appendChild(getNode("circle", {
-        class: "draggable",
-        cx: node.coords.x,
-        cy: node.coords.y,
-        r: SIZE.nodeRadius,
-        stroke: "black",
-        stroke_width: 0.1,
-        fill: "white"
-    }));
-    if (node.attributes.includes("end")) {
-        container.appendChild(getNode("circle", {
-            class: "draggable",
-            cx: node.coords.x,
-            cy: node.coords.y,
-            r: SIZE.nodeRadius - 0.3,
-            stroke: "black",
-            stroke_width: 0.1,
-            fill: "white"
-        }));
+    createCircle(container, node.coords, SIZE.nodeRadius);
+
+    if (node.attributes.includes(CONSTANTS.end)) {
+        createCircle(container, node.coords, SIZE.nodeRadius - 0.3);
     }
 
     // create the text
-    const textNode = getTextNode(node.coords, node.desc, true);
-    container.appendChild(textNode);
-
-    svg.appendChild(container);
+    createTextNode(container, node.coords, node.desc, true);
 }
 
 function buildLines(id) {
@@ -387,9 +399,7 @@ function buildLines(id) {
         let nodeId = node.to[otherNode].node;
         let otherCoords = graph[nodeId].coords;
 
-        const pathContainer = getNode("g", {
-            id: `path_${id}-${nodeId}`
-        })
+        const pathContainer = createContainer(svg, `${CONSTANTS.path}_${id}-${nodeId}`);
 
         // create line
         const middle = getMiddleOfVector(coords, otherCoords);
@@ -402,21 +412,9 @@ function buildLines(id) {
             dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
         }
 
-        pathContainer.appendChild(getNode('path', {
-            d: dValue,
-            stroke: "transparent",
-            stroke_width: 1,
-            fill: "none",
-            class: "draggable"
-        }));
-        pathContainer.appendChild(getNode('path', {
-            d: dValue,
-            stroke: "black",
-            stroke_width: 0.1,
-            marker_end: id != nodeId ? "url(#arrow)" : "url(#selfarrow)",
-            fill: "none",
-            class: "draggable"
-        }));
+        const markerEnd = id != nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
+        createPath(pathContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
+        createPath(pathContainer, "", dValue, 0.1, markerEnd, CONSTANTS.black, true);
 
         // append the text in the middle of the node
         if (id != nodeId) {
@@ -427,9 +425,7 @@ function buildLines(id) {
                 x: middle.x + normalVector.x * (dist / 2 + offset),
                 y: middle.y + normalVector.y * (dist / 2 + offset)
             }
-
-            const textNode = getTextNode(textCoords, node.to[otherNode].desc, true);
-            pathContainer.appendChild(textNode);
+            createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
         } else {
             const path = node.to.find(e => e.node == id);
             const angleVector = getVectorFromAngle(path.angle);
@@ -437,15 +433,12 @@ function buildLines(id) {
                 x: node.coords.x + angleVector.x * DISTANCE.selfEdgeText,
                 y: node.coords.y + angleVector.y * DISTANCE.selfEdgeText
             }
-            const textNode = getTextNode(textCoords, path.desc, false);
-
-            pathContainer.appendChild(textNode);
+            createTextNode(pathContainer, textCoords, path.desc, false);
         }
-        svg.appendChild(pathContainer);
     }
 }
 
-function getNode(n, v) {
+function createSVGNode(n, v={}) {
     n = document.createElementNS("http://www.w3.org/2000/svg", n);
     for (var p in v) {
         n.setAttributeNS(null, p.replace("_", "-"), v[p]);
@@ -453,7 +446,7 @@ function getNode(n, v) {
     return n
 }
 
-function getTextNode(position, text, draggable) {
+function createTextNode(parent, position, text, draggable) {
     const parsedText = parseText(text);
 
     let configuration = {
@@ -463,15 +456,15 @@ function getTextNode(position, text, draggable) {
         alignment_baseline: "central"
     };
     if (draggable) {
-        configuration.class = "draggable";
+        configuration.class = CONSTANTS.draggable;
     }
 
-    const textNode = getNode("text", configuration);
+    const textNode = createSVGNode(CONSTANTS.text, configuration);
     textNode.innerHTML = parsedText.text;
 
     if (parsedText.sub != "") {
-        const subTextNode = getNode("tspan", {
-            baseline_shift: "sub",
+        const subTextNode = getNode(CONSTANTS.tspan, {
+            baseline_shift: CONSTANTS.sub,
             dy: "0.5"
         });
         subTextNode.innerHTML = parsedText.sub;
@@ -481,8 +474,8 @@ function getTextNode(position, text, draggable) {
     if (parsedText.super != "") {
         // shift back the super text on top of the sub text
         const backShift = -parsedText.sub.length * (subTextSize / 2);
-        const superTextNode = getNode("tspan", {
-            baseline_shift: "super",
+        const superTextNode = getNode(CONSTANTS.tspan, {
+            baseline_shift: CONSTANTS.super,
             dx: backShift,
             dy: "0"
         });
@@ -490,6 +483,7 @@ function getTextNode(position, text, draggable) {
         textNode.appendChild(superTextNode);
     }
 
+    parent.appendChild(textNode);
     return textNode;
 }
 
@@ -520,26 +514,26 @@ function parseText(input) {
     return result;
 }
 
-function setNodeColor(nodeId, color) {
-    const selector = `node_${nodeId}`;
+function setNodeColor(nodeId, color=CONSTANTS.black) {
+    const selector = `${CONSTANTS.node}_${nodeId}`;
     const node = document.getElementById(selector);
 
     for (let child of node.childNodes) {
-        if (child.tagName == "circle") {
+        if (child.tagName == CONSTANTS.circle) {
             child.setAttributeNS(null, "stroke", color);
         }
     }
 }
 
-function setPathColor(fromId, toId, color="black") {
-    const selector = `path_${fromId}-${toId}`;
+function setPathColor(fromId, toId, color=CONSTANTS.black) {
+    const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const node = document.getElementById(selector);
 
     if (!node) return;
 
     // the first child is transparent
-    node.childNodes[1].setAttributeNS(null, "stroke", color);
-    node.childNodes[1].setAttributeNS(null, "marker-end", color == "black" ? "url(#arrow)" : "url(#arrowSelected)");
+    node.childNodes[1].setAttributeNS(null, CONSTANTS.stroke, color);
+    node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${color == CONSTANTS.black ? CONSTANTS.arrow : CONSTANTS.arrowSelected}`);
 }
 
 /* ========================================== Dragging logic ========================================== */
@@ -557,12 +551,12 @@ function makeDraggable(evt) {
         const target = evt.target;
         const id = target.parentNode.id;
         const prefix = id.split("_")[0];
-        if (target.classList.contains("draggable")) {
+        if (target.classList.contains(CONSTANTS.draggable)) {
             switch (prefix) {
-                case "node":
+                case CONSTANTS.node:
                     selectNode(target, id);
                     break;
-                case "path":
+                case CONSTANTS.path:
                     selectEdge(target, id);
                     break;
                 default:
@@ -599,14 +593,14 @@ function makeDraggable(evt) {
     }
 
     function startDrag(evt) {
-        let elem = evt.target.tagName !== "tspan" ? evt.target : evt.target.parentNode;
+        let elem = evt.target.tagName !== CONSTANTS.tspan ? evt.target : evt.target.parentNode;
 
-        if (elem.classList.contains('draggable')) {
+        if (elem.classList.contains(CONSTANTS.draggable)) {
             let parent = elem.parentNode;
 
-            if (elem.tagName == "text" && parent.id.includes("path")) {
+            if (elem.tagName == CONSTANTS.text && parent.id.includes(CONSTANTS.path)) {
                 ACTION.selectedDragElement = elem;
-            } else if (parent && parent.tagName == "g") {
+            } else if (parent && parent.tagName == CONSTANTS.g) {
                 ACTION.selectedDragElement = parent;
             } else {
                 console.error("Wrong element clickable");
@@ -622,7 +616,7 @@ function makeDraggable(evt) {
         const node = graph[ACTION.drawStartNodeId];
         const startCoords = node.coords;
 
-        const defaultPath = document.getElementById("defaultPath");
+        const defaultPath = document.getElementById(CONSTANTS.defaultPath);
         const dValue = `M${startCoords.x} ${startCoords.y} L${coord.x} ${coord.y}`;
 
         defaultPath.setAttributeNS(null, "d", dValue);
@@ -637,18 +631,18 @@ function makeDraggable(evt) {
         const suffix = ACTION.selectedDragElement.id.split("_")[1];
 
         // if a text is selected, we want to change the offset
-        if (ACTION.selectedDragElement.tagName === "text") {
-            prefix = "text";
+        if (ACTION.selectedDragElement.tagName === CONSTANTS.text) {
+            prefix = CONSTANTS.text;
         }
 
         switch (prefix) {
-            case "node":
+            case CONSTANTS.node:
                 dragNode(coord);
                 break;
-            case "start":
+            case CONSTANTS.start:
                 dragStartEdge(coord);
                 break;
-            case "path":
+            case CONSTANTS.path:
                 const nodes = suffix.split("-");
                 if (nodes[0] == nodes[1]) {
                     dragSelfEdge(coord);
@@ -656,7 +650,7 @@ function makeDraggable(evt) {
                     dragEdge(coord);
                 }
                 break;
-            case "text":
+            case CONSTANTS.text:
                 dragText(coord);
                 break;
             default:
@@ -703,10 +697,10 @@ function makeDraggable(evt) {
 
         for (let child of ACTION.selectedDragElement.childNodes) {
             switch (child.tagName) {
-                case "path":
+                case CONSTANTS.path:
                     child.setAttributeNS(null, "transform", `rotate(${angle}, ${node.coords.x}, ${node.coords.y})`);
                     break;
-                case "text":
+                case CONSTANTS.text:
                     correctSelfEdgeText(child, nodeId);
                     break;
                 default:
@@ -744,11 +738,11 @@ function makeDraggable(evt) {
 
         const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
         for (let child of ACTION.selectedDragElement.childNodes) {
-            if (child.tagName == "path") {
+            if (child.tagName == CONSTANTS.path) {
                 child.setAttributeNS(null, "d", dValue);
             }
 
-            if (child.tagName == "text") {
+            if (child.tagName == CONSTANTS.text) {
                 child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
                 child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
             }
@@ -799,13 +793,13 @@ function makeDraggable(evt) {
 
         // move the text and the circle
         for (let child of ACTION.selectedDragElement.childNodes) {
-            child.setAttributeNS(null, child.tagName == "circle" ? "cx" : "x", coord.x);
-            child.setAttributeNS(null, child.tagName == "circle" ? "cy" : "y", coord.y);
+            child.setAttributeNS(null, child.tagName == CONSTANTS.circle ? "cx" : "x", coord.x);
+            child.setAttributeNS(null, child.tagName == CONSTANTS.circle ? "cy" : "y", coord.y);
         }
 
         // change the path of start
-        if (graph[id].attributes.includes("start")) {
-            const selector = `start_${id}`;
+        if (graph[id].attributes.includes(CONSTANTS.start)) {
+            const selector = `${CONSTANTS.start}_${id}`;
             const pathContainer = document.getElementById(selector);
 
             const startAngle = getVectorFromAngle(node.startAngle);
@@ -847,17 +841,17 @@ function makeDraggable(evt) {
             const selfPath = node.to.find(e => e.node == id);
 
             // get the svg path
-            const selector = `path_${id}-${id}`;
+            const selector = `${CONSTANTS.path}_${id}-${id}`;
             const path = document.getElementById(selector);
 
             // correct the self edge 
             for (let child of path.childNodes) {
                 switch (child.tagName) {
-                    case "path":
+                    case CONSTANTS.path:
                         child.setAttributeNS(null, "d", dValue);
                         child.setAttributeNS(null, "transform", `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`);
                         break;
-                    case "text":
+                    case CONSTANTS.text:
                         correctSelfEdgeText(child, id);
                         break;
                     default:
@@ -901,7 +895,7 @@ function makeDraggable(evt) {
                 }
             }
 
-            const defaultPath = document.getElementById("defaultPath");
+            const defaultPath = document.getElementById(CONSTANTS.defaultPath);
             defaultPath.setAttributeNS(null, "d", "")
         }
 
@@ -922,7 +916,7 @@ function makeDraggable(evt) {
 function correctEdges(pathList, id, to) {
     for (let nodeId of pathList) {
         // get the svg path
-        const selector = `path_${to ? id : nodeId}-${to ? nodeId : id}`;
+        const selector = `${CONSTANTS.path}_${to ? id : nodeId}-${to ? nodeId : id}`;
         const path = document.getElementById(selector);
 
         // redraw the path
@@ -938,12 +932,12 @@ function correctEdges(pathList, id, to) {
         const textOffset = otherNode.textOffset;
 
         for (const child of path.childNodes) {
-            if (child.tagName == "path") {
+            if (child.tagName == CONSTANTS.path) {
                 child.setAttributeNS(null, "d", dValue);
             }
 
             // redraw the label
-            if (child.tagName == "text") {
+            if (child.tagName == CONSTANTS.text) {
                 const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
                 child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
                 child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
@@ -1030,13 +1024,13 @@ function getVectorFromAngle(angle) {
     return getUnitVector(vector);
 }
 
-function downloadSVG() {
+function downloadSVG(downloadLink) {
     unselectAll();
 
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
     var svgUrl = URL.createObjectURL(svgBlob);
-    var downloadLink = document.getElementsByTagName("a")[0];
+
     downloadLink.href = svgUrl;
     downloadLink.download = "automaton.svg";
 }
