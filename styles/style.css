@@ -32,10 +32,11 @@ svg {
 }
 
 img {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 2rem;
+    height: 2rem;
     background-color: #88FA76;
     border: 1px solid black;
+    border-radius: 5px;
 }
 
 button, a {
@@ -53,8 +54,21 @@ button, a {
     cursor: pointer;
 }
 
-button:active, a:active {
+button:active, a:active, button:hover, a:hover {
     background-color: #354E87;
+}
+
+#removeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #f56666;
+    border-color: #db1111;
+}
+
+#removeButton:active, #removeButton:hover {
+    background-color: #e65858;
 }
 
 a {

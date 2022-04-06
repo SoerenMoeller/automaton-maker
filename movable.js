@@ -132,20 +132,26 @@ function handleKeyEvent(event) {
             toggleEndNode(true);
             break;
         default:
-            console.log(event.code);
+            // debug only
+            //console.log(event.code);
     }
 }
 
 function showEdgeConfiguration(ids) {
     const container = resetConfigurationView();
 
+    // create the elements
+    const removeButton = createRemoveButton(container, "remove");
     const textDescriptionContainer = createDescriptionContainer(container);
     const textDescription = textDescriptionContainer.childNodes[1];
     
+    // fill with existing data
     const node = graph[ids.from];
     const path = node.to.find(e => e.node == ids.to);
     textDescription.value = path.desc;
 
+    // add events for change 
+    removeButton.addEventListener("click", evt => removeElement());
     textDescription.addEventListener("focusin", evt => ACTION.typing = true);
     textDescription.addEventListener("focusout", evt => ACTION.typing = false);
     textDescription.addEventListener("input", evt => {
@@ -160,6 +166,7 @@ function showNodeConfiguration(nodeId) {
     const container = resetConfigurationView();
 
     // create the elements
+    const removeButton = createRemoveButton(container, "remove");
     const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
     const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
     const textDescriptionContainer = createDescriptionContainer(container);
@@ -174,7 +181,8 @@ function showNodeConfiguration(nodeId) {
     checkBoxStart.checked = node.attributes.includes(CONSTANTS.start);
     textDescription.value = node.desc;
 
-    // add events for change TODO
+    // add events for change 
+    removeButton.addEventListener("click", evt => removeElement());
     checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
     checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
     textDescription.addEventListener("focusin", evt => ACTION.typing = true);
@@ -187,6 +195,13 @@ function showNodeConfiguration(nodeId) {
         node.desc = textDescription.value;
         buildSVG();
     });
+}
+
+function createRemoveButton(parent, text) {
+    const button = createDOMElement(parent, "button", { id: "removeButton" });
+    button.innerText = text;
+
+    return button;
 }
 
 function resetConfigurationView() {
@@ -332,7 +347,6 @@ function removeElement() {
     if (!ACTION.selectedElement) return;
 
     const name = getIdPrefix(ACTION.selectedElement);
-
     switch (name) {
         case CONSTANTS.node:
             removeNode();
@@ -344,7 +358,7 @@ function removeElement() {
             console.error("Trying to delete unknown type");
     }
 
-    ACTION.selectedElement = null;
+    unselectAll();
 }
 
 function removePath() {
@@ -352,10 +366,11 @@ function removePath() {
 
     // remove edge from logic
     let to = graph[ids.from].to;
-    to = to.filter(e => e.node != ids.to);
+    graph[ids.from].to = to.filter(e => e.node != ids.to);
 
     // remove from view
     ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
+    unselectAll();
 }
 
 function removeNode() {
@@ -379,7 +394,6 @@ function removeNode() {
 
     // remove from view
     ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
-    resetConfigurationView();
 }
 
 function removePathFromView(edges, id, to) {
@@ -455,7 +469,7 @@ function createMarker(parent, id, width, height, refX, refY, color, polygonPoint
     parent.appendChild(marker);
 }
 
-function createPath(parent, id, dValue, stroke_width, marker, color, draggable = false) {
+function createPath(parent, id, dValue, stroke_width, marker, color, draggable=false) {
     const path = createSVGElement(CONSTANTS.path, {
         d: dValue,
         stroke: color,
@@ -739,7 +753,6 @@ function reselect() {
     // this is needed because currently, everything gets redrawn
     if (!ACTION.selectedElement) return;
 
-    console.log(ACTION.selectedElement);
     switch (getIdPrefix(ACTION.selectedElement)) {
         case CONSTANTS.node:
             const nodeId = getIdOfNode(ACTION.selectedElement);
@@ -844,7 +857,7 @@ function makeDraggable(evt) {
                     selectEdge(target.parentNode);
                     break;
                 default:
-                    console.log("Unknown type selected");
+                    console.error("Unknown type selected");
             }
         }
     }
