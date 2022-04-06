@@ -7,12 +7,8 @@ In general, NFAs, DFAs and TMs should be supported.
 - Labels on nodes
 - Multiple lines on edge labels
 - Text offset on self edges
-- Select elements after creation
-- Add delete button on select
 
 ## Bugs
-- Deleting nodes leaves the edges
-- No edge offset drawn on load
 - Arrow offset
 - Start arrow not selectable
 

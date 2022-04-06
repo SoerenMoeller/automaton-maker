@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", main);
 
-const COLOR_MARKED = "#34ebeb";
+const COLOR = {
+    black: "black",
+    grid: "rgba(224, 128, 31, 0.3)",
+    marked: "#34ebeb",
+    transparent: "transparent"
+}
 
 const THRESHOLDS = {
     straightEdge: 2,
@@ -15,11 +20,11 @@ const DISTANCE = {
 const SIZE = {
     text: 2.5,
     subText: 1.5,
-    nodeRadius: 4
+    nodeRadius: 4,
+    grid: 2.5
 };
 
 const KEYS = {
-    shift: false,
     control: false
 }
 
@@ -28,7 +33,8 @@ const ACTION = {
     selectedDragElement: null,
     selectedElement: null,
     drawStartNodeId: -1,
-    typing: false
+    typing: false,
+    showGrid: false
 }
 
 const CONSTANTS = {
@@ -48,7 +54,6 @@ const CONSTANTS = {
     selfarrow: "selfarrow",
     arrowSelected: "arrowSelected",
     selfarrowSelected: "selfarrowSelected",
-    black: "black",
     draggable: "draggable",
     g: "g",
     tspan: "tspan",
@@ -95,7 +100,6 @@ function resetAll() {
 }
 
 function handleKeyUpEvent(event) {
-    KEYS.shift = false;
     KEYS.control = false;
 }
 
@@ -110,13 +114,11 @@ function handleKeyEvent(event) {
             break;
         case "ShiftRight":
         case "ShiftLeft":
-            KEYS.shift = true;
-            KEYS.control = false;
+            toggleGridView();
             break;
         case "ControlLeft":
         case "ControlRight":
             KEYS.control = true;
-            KEYS.shift = false;
             break;
         case "Escape":
             unselectAll();
@@ -134,6 +136,16 @@ function handleKeyEvent(event) {
         default:
             // debug only
             //console.log(event.code);
+    }
+}
+
+function toggleGridView() {
+    ACTION.showGrid = !ACTION.showGrid;
+    const gridContainer = document.getElementById("gridContainer");
+    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
+    
+    for (let child of gridContainer.childNodes) {
+        child.setAttributeNS(null, CONSTANTS.stroke, color);
     }
 }
 
@@ -434,11 +446,11 @@ function resetSVG() {
     const defs = createSVGElement(CONSTANTS.defs);
     const selfPolygon = "0 13, 11 0, 10 16";
     const polygon = "0 0, 16 5, 0 10";
-    createMarker(defs, CONSTANTS.arrow, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, CONSTANTS.black, polygon);
-    createMarker(defs, CONSTANTS.arrowSelected, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR_MARKED, polygon);
-    createMarker(defs, CONSTANTS.selfarrow, 16, 16, 23, -7.5, CONSTANTS.black, selfPolygon);
-    createMarker(defs, CONSTANTS.selfarrowSelected, 16, 16, 23, -7.5, COLOR_MARKED, selfPolygon);
-    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, COLOR_MARKED, polygon);
+    createMarker(defs, CONSTANTS.arrow, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR.black, polygon);
+    createMarker(defs, CONSTANTS.arrowSelected, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR.marked, polygon);
+    createMarker(defs, CONSTANTS.selfarrow, 16, 16, 23, -7.5, COLOR.black, selfPolygon);
+    createMarker(defs, CONSTANTS.selfarrowSelected, 16, 16, 23, -7.5, COLOR.marked, selfPolygon);
+    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, COLOR.marked, polygon);
     svg.appendChild(defs);
 
     // style
@@ -447,7 +459,22 @@ function resetSVG() {
     svg.appendChild(style);
 
     // add default path for later usage
-    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, COLOR_MARKED);
+    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, COLOR.marked);
+
+    // make a grid for visible layout
+    initGrid()
+}
+
+function initGrid() {
+    const container = createContainer(svg, "gridContainer");
+
+    for (let i = 0; i <= 100; i += SIZE.grid) {
+        const dValueRow = `M0 ${i} L100 ${i}`;
+        createPath(container, "", dValueRow, 0.1, "", COLOR.transparent);
+
+        const dValueCol = `M${i} 0 L${i} 100`;
+        createPath(container, "", dValueCol, 0.1, "", COLOR.transparent);
+    }
 }
 
 function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {
@@ -499,7 +526,7 @@ function createCircle(parent, coords, radius) {
         cx: coords.x,
         cy: coords.y,
         r: radius,
-        stroke: CONSTANTS.black,
+        stroke: COLOR.black,
         stroke_width: 0.1,
         fill: CONSTANTS.white
     });
@@ -546,8 +573,8 @@ function buildNode(id) {
 
         // make a thick invis line, to be able to click it nicely
         const startContainer = createContainer(container, `${CONSTANTS.start}_${id}`);
-        createPath(startContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
-        createPath(startContainer, "", dValue, 0.1, CONSTANTS.arrow, CONSTANTS.black, true);
+        createPath(startContainer, "", dValue, 1, "", COLOR.transparent, true);
+        createPath(startContainer, "", dValue, 0.1, CONSTANTS.arrow, COLOR.black, true);
     }
 
     // create the circle
@@ -583,8 +610,8 @@ function buildLines(id) {
         }
 
         const markerEnd = id != nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
-        const outerPath = createPath(pathContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
-        const innerPath = createPath(pathContainer, "", dValue, 0.1, markerEnd, CONSTANTS.black, true);
+        const outerPath = createPath(pathContainer, "", dValue, 1, "", COLOR.transparent, true);
+        const innerPath = createPath(pathContainer, "", dValue, 0.1, markerEnd, COLOR.black, true);
 
         if (id == nodeId) {
             const path = node.to.find(e => e.node == id);
@@ -691,7 +718,7 @@ function parseText(input) {
     return result;
 }
 
-function setNodeColor(nodeId, color = CONSTANTS.black) {
+function setNodeColor(nodeId, color = COLOR.black) {
     const selector = `${CONSTANTS.node}_${nodeId}`;
     const node = document.getElementById(selector);
 
@@ -702,15 +729,15 @@ function setNodeColor(nodeId, color = CONSTANTS.black) {
     }
 }
 
-function setPathColor(fromId, toId, color=CONSTANTS.black) {
+function setPathColor(fromId, toId, color=COLOR.black) {
     const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const node = document.getElementById(selector);
 
     if (!node) return;
     
-    let marker = (color == CONSTANTS.black) ? CONSTANTS.arrow : CONSTANTS.arrowSelected;
+    let marker = (color == COLOR.black) ? CONSTANTS.arrow : CONSTANTS.arrowSelected;
     if (fromId === toId) {
-        marker = (color == CONSTANTS.black) ? CONSTANTS.selfarrow : CONSTANTS.selfarrowSelected;
+        marker = (color == COLOR.black) ? CONSTANTS.selfarrow : CONSTANTS.selfarrowSelected;
     }
 
     // the first child is transparent
@@ -726,7 +753,7 @@ function selectEdge(elem) {
 
     // mark selected node
     const ids = getIdsOfPath(elem);
-    setPathColor(ids.from, ids.to, COLOR_MARKED);
+    setPathColor(ids.from, ids.to, COLOR.marked);
 
     showEdgeConfiguration(ids);
 }
@@ -739,7 +766,7 @@ function selectNode(elem) {
 
     // mark selected node
     const nodeId = getIdOfNode(elem);
-    setNodeColor(nodeId, COLOR_MARKED);
+    setNodeColor(nodeId, COLOR.marked);
 
     if (KEYS.control) {
         startDrawing(nodeId);
@@ -757,12 +784,12 @@ function reselect() {
         case CONSTANTS.node:
             const nodeId = getIdOfNode(ACTION.selectedElement);
             ACTION.selectedElement = getNodeElemById(nodeId);
-            setNodeColor(nodeId, COLOR_MARKED);
+            setNodeColor(nodeId, COLOR.marked);
             break;
         case CONSTANTS.path:
             const ids = getIdsOfPath(ACTION.selectedElement);
             ACTION.selectedElement = getPathElemByIds(ids.from, ids.to);
-            setPathColor(ids.from, ids.to, COLOR_MARKED);
+            setPathColor(ids.from, ids.to, COLOR.marked);
             break;
         default:
             console.error("Trying to reconstruct unknown element");
