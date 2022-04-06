@@ -131,9 +131,9 @@ function handleKeyEvent(event) {
 }
 
 function toggleEndNode() {
-    if (!selectedElement || selectedElement.id.split("_")[0] != CONSTANTS.node) return;
+    if (!ACTION.selectedElement || ACTION.selectedElement.id.split("_")[0] != CONSTANTS.node) return;
 
-    const nodeId = selectedElement.id.split("_")[1];
+    const nodeId = ACTION.selectedElement.id.split("_")[1];
     const node = graph[nodeId];
     if (node.attributes.includes(CONSTANTS.end)) {
         delete node.attributes[node.attributes.indexOf(CONSTANTS.end)];
@@ -145,9 +145,9 @@ function toggleEndNode() {
 }
 
 function toggleStartNode() {
-    if (!selectedElement || selectedElement.id.split("_")[0] != CONSTANTS.node) return;
+    if (!ACTION.selectedElement || ACTION.selectedElement.id.split("_")[0] != CONSTANTS.node) return;
 
-    const nodeId = selectedElement.id.split("_")[1];
+    const nodeId = ACTION.selectedElement.id.split("_")[1];
     const node = graph[nodeId];
     if (node.attributes.includes(CONSTANTS.start)) {
         delete node.attributes[node.attributes.indexOf(CONSTANTS.start)];
@@ -605,7 +605,6 @@ function endDrawing(event) {
         // highlight the edge
         const selector = `${CONSTANTS.path}_${ACTION.drawStartNodeId}-${nodeId}`;
         const path = document.getElementById(selector);
-        console.log(svg);
         selectEdge(path);
         break;
     }
