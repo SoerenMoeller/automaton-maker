@@ -27,7 +27,8 @@ const ACTION = {
     draw: false,
     selectedDragElement: null,
     selectedElement: null,
-    drawStartNodeId: -1
+    drawStartNodeId: -1,
+    typing: false
 }
 
 const CONSTANTS = {
@@ -99,6 +100,8 @@ function handleKeyUpEvent(event) {
 }
 
 function handleKeyEvent(event) {
+    if (ACTION.typing && (event.code.startsWith("Key") || event.code === "Backspace")) return;
+
     switch (event.code) {
         case "KeyA":
             addNode();
@@ -152,6 +155,16 @@ function showNodeConfiguration(nodeId) {
     // add events for change TODO
     checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
     checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
+    textDescription.addEventListener("focusin", evt => ACTION.typing = true);
+    textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    textDescription.addEventListener("input", evt => {
+        evt.preventDefault();
+        const nodeId = getIdOfNode(ACTION.selectedElement);
+        const node = graph[nodeId];
+
+        node.desc = textDescription.value;
+        buildSVG();
+    });
 }
 
 function resetConfigurationView() {
@@ -225,9 +238,6 @@ function toggleEndNode(changeView) {
     }
 
     buildSVG();
-
-    // highlight the node again
-    selectNodeById(nodeId);
 }
 
 function toggleStartNode(changeView) {
@@ -251,9 +261,6 @@ function toggleStartNode(changeView) {
     }
 
     buildSVG();
-
-    // highlight the node again
-    selectNodeById(nodeId);
 }
 
 function addNode() {
@@ -276,12 +283,27 @@ function addNode() {
 }
 
 function selectNodeById(nodeId) {
+    const nodeElem = getNodeElemById(nodeId);
+
+    selectNode(nodeElem);
+}
+
+function getNodeElemById(nodeId) {
     const selector = `${CONSTANTS.node}_${nodeId}`;
     const nodeElem = document.getElementById(selector);
 
-    console.assert(nodeElem, "Couldn't select node");
+    console.assert(nodeElem, "Couldn't find node");
 
-    selectNode(nodeElem);
+    return nodeElem;
+}
+
+function getPathElemByIds(fromId, toId) {
+    const selector = `${fromId}_${toId}`;
+    const nodeElem = document.getElementById(selector);
+
+    console.assert(nodeElem, "Couldn't find node");
+
+    return nodeElem;
 }
 
 function removeElement() {
@@ -352,6 +374,7 @@ function removePathFromView(edges, id, to) {
 
 function unselectAll() {
     ACTION.selectedElement = null;
+    ACTION.typing = false;
 
     resetConfigurationView();
 
@@ -471,6 +494,8 @@ function buildSVG() {
     for (let node in graph) {
         buildNode(node);
     }
+
+    reselect();
 }
 
 function buildNode(id) {
@@ -572,7 +597,7 @@ function createTextNode(parent, position, text, draggable) {
     textNode.innerHTML = parsedText.text;
 
     if (parsedText.sub != "") {
-        const subTextNode = getNode(CONSTANTS.tspan, {
+        const subTextNode = createSVGElement(CONSTANTS.tspan, {
             baseline_shift: CONSTANTS.sub,
             dy: "0.5"
         });
@@ -582,8 +607,8 @@ function createTextNode(parent, position, text, draggable) {
 
     if (parsedText.super != "") {
         // shift back the super text on top of the sub text
-        const backShift = -parsedText.sub.length * (subTextSize / 2);
-        const superTextNode = getNode(CONSTANTS.tspan, {
+        const backShift = -parsedText.sub.length * (SIZE.subText / 2);
+        const superTextNode = createSVGElement(CONSTANTS.tspan, {
             baseline_shift: CONSTANTS.super,
             dx: backShift,
             dy: "0"
@@ -672,6 +697,26 @@ function selectNode(elem) {
 
     // show view elements
     showNodeConfiguration(nodeId);
+}
+
+function reselect() {
+    // this is needed because currently, everything gets redrawn
+    if (!ACTION.selectedElement) return;
+
+    switch (getIdPrefix(ACTION.selectedElement)) {
+        case CONSTANTS.node:
+            const nodeId = getIdOfNode(ACTION.selectedElement);
+            ACTION.selectedElement = getNodeElemById(nodeId);
+            setNodeColor(nodeId, COLOR_MARKED);
+            break;
+        case CONSTANTS.path:
+            const ids = getIdsOfPath(ACTION.selectedElement);
+            ACTION.selectedElement = getPathElemByIds(ids.from, ids.to);
+            setPathColor(ids.from, ids.to, COLOR_MARKED);
+            break;
+        default:
+            console.error("Trying to reconstruct unknown element");
+    }
 }
 
 function startDrawing(nodeId) {
