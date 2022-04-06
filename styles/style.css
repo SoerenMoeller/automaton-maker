@@ -36,21 +36,24 @@ img {
     height: 1.5rem;
     background-color: #88FA76;
     border: 1px solid black;
-
-    cursor: pointer;
 }
 
-button {
+button, a {
     color: white;
     background-color: #4D6BB0;
     border: 1px solid #213A73;
     border-radius: 5px;
 
+    line-height: 150%;
+    text-align: center;
+
     width: 12%;
     height: 35%;
+
+    cursor: pointer;
 }
 
-button:active {
+button:active, a:active {
     background-color: #354E87;
 }
 
@@ -72,6 +75,7 @@ button:active {
     align-items: center;
 
     gap: 0.5rem;
+    cursor: pointer;
 }
 
 .draggable {
