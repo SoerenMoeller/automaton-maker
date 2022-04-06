@@ -161,7 +161,7 @@ function resetConfigurationView() {
     return container;
 }
 
-function createDOMElement(parent, name, attributes={}) {
+function createDOMElement(parent, name, attributes = {}) {
     const element = document.createElement(name);
 
     for (let attr in attributes) {
@@ -208,15 +208,13 @@ function createContainerWithText(parent, text) {
 
 function toggleEndNode(changeView) {
     if (!ACTION.selectedElement || ACTION.selectedElement.id.split("_")[0] != CONSTANTS.node) return;
-    
+
     const nodeId = ACTION.selectedElement.id.split("_")[1];
     const node = graph[nodeId];
     const removeEnd = node.attributes.includes(CONSTANTS.end);
 
     if (changeView) {
         const checkBox = document.getElementById("endCheckBox");
-        console.log(checkBox);
-        console.log(document.getElementsByTagName("body")[0]);
         checkBox.checked = !removeEnd;
     }
 
@@ -227,6 +225,9 @@ function toggleEndNode(changeView) {
     }
 
     buildSVG();
+
+    // highlight the node again
+    selectNodeById(nodeId);
 }
 
 function toggleStartNode(changeView) {
@@ -250,6 +251,9 @@ function toggleStartNode(changeView) {
     }
 
     buildSVG();
+
+    // highlight the node again
+    selectNodeById(nodeId);
 }
 
 function addNode() {
@@ -268,8 +272,15 @@ function addNode() {
     buildSVG();
 
     // highlight the node after builing it
-    const selector = `${CONSTANTS.node}_${highestId - 1}`;
+    selectNodeById(highestId - 1);
+}
+
+function selectNodeById(nodeId) {
+    const selector = `${CONSTANTS.node}_${nodeId}`;
     const nodeElem = document.getElementById(selector);
+
+    console.assert(nodeElem, "Couldn't select node");
+
     selectNode(nodeElem);
 }
 
