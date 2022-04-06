@@ -13,7 +13,6 @@ In general, NFAs, DFAs and TMs should be supported.
 - Deleting nodes leaves the edges
 - No edge offset drawn on load
 - Arrow offset
-- Wrong arrowhead on selected self edges
 - Toggle end node sets back self edge
 
 ## Hot features to come

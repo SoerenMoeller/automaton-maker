@@ -659,15 +659,20 @@ function setNodeColor(nodeId, color = CONSTANTS.black) {
     }
 }
 
-function setPathColor(fromId, toId, color = CONSTANTS.black) {
+function setPathColor(fromId, toId, color=CONSTANTS.black) {
     const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const node = document.getElementById(selector);
 
     if (!node) return;
+    
+    let marker = (color == CONSTANTS.black) ? CONSTANTS.arrow : CONSTANTS.arrowSelected;
+    if (fromId === toId) {
+        marker = (color == CONSTANTS.black) ? CONSTANTS.selfarrow : CONSTANTS.selfarrowSelected;
+    }
 
     // the first child is transparent
     node.childNodes[1].setAttributeNS(null, CONSTANTS.stroke, color);
-    node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${color == CONSTANTS.black ? CONSTANTS.arrow : CONSTANTS.arrowSelected}`);
+    node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${marker}`);
 }
 
 function selectEdge(elem) {
