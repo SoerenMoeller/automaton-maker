@@ -9,7 +9,8 @@ const COLOR = {
 
 const THRESHOLDS = {
     straightEdge: 2,
-    text: 3
+    text: 3,
+    angle: 15
 };
 
 const DISTANCE = {
@@ -21,7 +22,7 @@ const SIZE = {
     text: 2.5,
     subText: 1.5,
     nodeRadius: 4,
-    grid: 2.5
+    grid: 4
 };
 
 const KEYS = {
@@ -94,6 +95,7 @@ function main() {
 }
 
 function resetAll() {
+    ACTION.showGrid = false;
     unselectAll();
     graph = {};
     resetSVG();
@@ -467,13 +469,14 @@ function resetSVG() {
 
 function initGrid() {
     const container = createContainer(svg, "gridContainer");
+    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
 
     for (let i = 0; i <= 100; i += SIZE.grid) {
         const dValueRow = `M0 ${i} L100 ${i}`;
-        createPath(container, "", dValueRow, 0.1, "", COLOR.transparent);
+        createPath(container, "", dValueRow, 0.1, "", color);
 
         const dValueCol = `M${i} 0 L${i} 100`;
-        createPath(container, "", dValueCol, 0.1, "", COLOR.transparent);
+        createPath(container, "", dValueCol, 0.1, "", color);
     }
 }
 
@@ -992,7 +995,10 @@ function makeDraggable(evt) {
         const nodeId = ids.split("-")[0];
         const node = graph[nodeId];
 
-        const angle = getAngle360Degree(node.coords, coord);
+        let angle = getAngle360Degree(node.coords, coord);
+        if (ACTION.showGrid) {
+            angle = getClosestStep(angle, 360, THRESHOLDS.angle);
+        }
         const selfPath = node.to.find(e => e.node == nodeId);
         selfPath.angle = angle;
 
@@ -1055,7 +1061,10 @@ function makeDraggable(evt) {
         const id = parseInt(ACTION.selectedDragElement.id.split("_")[1]);
         const node = graph[id];
 
-        const angle = getAngle360Degree(node.coords, coord);
+        let angle = getAngle360Degree(node.coords, coord);
+        if (ACTION.showGrid) {
+            angle = getClosestStep(angle, 360, THRESHOLDS.angle);
+        }
         node.startAngle = angle;
 
         // adapt the line
@@ -1071,6 +1080,11 @@ function makeDraggable(evt) {
         // get the id of the node
         const id = parseInt(ACTION.selectedDragElement.id.split("_")[1]);
         const node = graph[id];
+
+        if (ACTION.showGrid) {
+            coord.x = getClosestStep(coord.x, 100, SIZE.grid);
+            coord.y = getClosestStep(coord.y, 100, SIZE.grid);
+        }
 
         // prevent going over the edge
         let freezeX = coord.x > 100 - SIZE.nodeRadius || coord.x < SIZE.nodeRadius;
@@ -1332,4 +1346,17 @@ function removeEdgesToNode(id) {
     for (let nodeId in graph) {
         graph[nodeId].to = graph[nodeId].to.filter(e => e.node != id)
     }
+}
+
+function getClosestStep(val, end, step) {
+    let dist = Number.MAX_VALUE;
+    let newValue;
+    for (let i = 0; i <= end; i += step) {
+        if (Math.abs(val - i) < dist) {
+            dist = Math.abs(val - i);
+            newValue = i;
+        }
+    }
+
+    return newValue;
 }
