@@ -15,6 +15,7 @@ In general, NFAs, DFAs and TMs should be supported.
 - Arrow offset
 - Wrong arrowhead on selected self edges
 - Toggle end node sets back self edge
+- Toggle start/end resets marking of node
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code

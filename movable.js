@@ -88,6 +88,7 @@ function main() {
 }
 
 function resetAll() {
+    unselectAll();
     graph = {};
     resetSVG();
 }
@@ -128,6 +129,83 @@ function handleKeyEvent(event) {
         default:
             console.log(event.code);
     }
+}
+
+function showNodeConfiguration(nodeId) {
+    const container = resetConfigurationView();
+
+    // create the elements
+    const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
+    const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
+    const textDescriptionContainer = createDescriptionContainer(container);
+    console.log(checkBoxEndContainer);
+    const checkBoxEnd = checkBoxEndContainer.childNodes[1];
+    const checkBoxStart = checkBoxStartContainer.childNodes[1];
+    const textDescription = textDescriptionContainer.childNodes[1];
+
+    // fill with existing data
+    const node = graph[nodeId];
+    checkBoxEnd.checked = node.attributes.includes(CONSTANTS.end);
+    checkBoxStart.checked = node.attributes.includes(CONSTANTS.start);
+    textDescription.value = node.desc;
+
+    // add events for change TODO
+    checkBoxEnd.addEventListener("click", evt => {
+        if (node.attributes.includes(CONSTANTS.end)) {
+        }
+    });
+}
+
+function resetConfigurationView() {
+    const container = document.getElementsByClassName("flow-right")[0];
+    container.innerHTML = "";
+
+    return container;
+}
+
+function createDOMElement(parent, name, attributes={}) {
+    const element = document.createElement(name);
+
+    for (let attr in attributes) {
+        element.setAttribute(attr, attributes[attr]);
+    }
+
+    parent.appendChild(element);
+    return element
+}
+
+function createInputForm(parent, type, id) {
+    return createDOMElement(parent, "input", {
+        type: type,
+        id: id,
+        name: id
+    });
+}
+
+function createDescriptionContainer(parent) {
+    const container = createContainerWithText(parent, "Description");
+
+    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
+
+    return container;
+}
+
+function createCheckBoxContainer(parent, text) {
+    const upperCaseText = text[0].toUpperCase() + text.substring(1)
+    const container = createContainerWithText(parent, upperCaseText);
+
+    createInputForm(container, "checkbox", text)
+
+    return container;
+}
+
+function createContainerWithText(parent, text) {
+    const container = createDOMElement(parent, "div", { class: "flex-container" });
+
+    const textElement = createDOMElement(container, "p");
+    textElement.innerText = text;
+
+    return container;
 }
 
 function toggleEndNode() {
@@ -232,6 +310,7 @@ function removeNode() {
 
     // remove from view
     ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
+    resetConfigurationView();
 }
 
 function removePathFromView(edges, id, to) {
@@ -247,7 +326,9 @@ function removePathFromView(edges, id, to) {
 }
 
 function unselectAll() {
-    selectedElement = false;
+    ACTION.selectedElement = null;
+
+    resetConfigurationView();
 
     // unmark all nodes
     for (let nodeId in graph) {
@@ -266,7 +347,7 @@ function resetSVG() {
     svg.innerHTML = "";
 
     // make the arrowheads
-    const defs = createSVGNode(CONSTANTS.defs);
+    const defs = createSVGElement(CONSTANTS.defs);
     const selfPolygon = "0 13, 11 0, 10 16";
     const polygon = "0 0, 16 5, 0 10";
     createMarker(defs, CONSTANTS.arrow, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, CONSTANTS.black, polygon);
@@ -277,7 +358,7 @@ function resetSVG() {
     svg.appendChild(defs);
 
     // style
-    const style = createSVGNode(CONSTANTS.style);
+    const style = createSVGElement(CONSTANTS.style);
     style.innerHTML = `text {font: italic ${SIZE.text}px sans-serif; user-select: none;} tspan {font: italic ${SIZE.subText}px sans-serif; user-select: none;}`
     svg.appendChild(style);
 
@@ -286,7 +367,7 @@ function resetSVG() {
 }
 
 function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {
-    const marker = createSVGNode(CONSTANTS.marker, {
+    const marker = createSVGElement(CONSTANTS.marker, {
         id: id,
         markerWidth: width,
         markerHeight: height,
@@ -296,7 +377,7 @@ function createMarker(parent, id, width, height, refX, refY, color, polygonPoint
         orient: "auto"
     });
 
-    const polygon = createSVGNode(CONSTANTS.polygon, {
+    const polygon = createSVGElement(CONSTANTS.polygon, {
         points: polygonPoints
     });
 
@@ -305,7 +386,7 @@ function createMarker(parent, id, width, height, refX, refY, color, polygonPoint
 }
 
 function createPath(parent, id, dValue, stroke_width, marker, color, draggable = false) {
-    const path = createSVGNode(CONSTANTS.path, {
+    const path = createSVGElement(CONSTANTS.path, {
         d: dValue,
         stroke: color,
         stroke_width: stroke_width,
@@ -329,7 +410,7 @@ function createPath(parent, id, dValue, stroke_width, marker, color, draggable =
 }
 
 function createCircle(parent, coords, radius) {
-    const circle = createSVGNode(CONSTANTS.circle, {
+    const circle = createSVGElement(CONSTANTS.circle, {
         class: CONSTANTS.draggable,
         cx: coords.x,
         cy: coords.y,
@@ -344,7 +425,7 @@ function createCircle(parent, coords, radius) {
 }
 
 function createContainer(parent, id) {
-    const container = createSVGNode(CONSTANTS.g, {
+    const container = createSVGElement(CONSTANTS.g, {
         id: id
     });
 
@@ -441,7 +522,7 @@ function buildLines(id) {
     }
 }
 
-function createSVGNode(n, v = {}) {
+function createSVGElement(n, v = {}) {
     n = document.createElementNS("http://www.w3.org/2000/svg", n);
     for (var p in v) {
         n.setAttributeNS(null, p.replace("_", "-"), v[p]);
@@ -462,7 +543,7 @@ function createTextNode(parent, position, text, draggable) {
         configuration.class = CONSTANTS.draggable;
     }
 
-    const textNode = createSVGNode(CONSTANTS.text, configuration);
+    const textNode = createSVGElement(CONSTANTS.text, configuration);
     textNode.innerHTML = parsedText.text;
 
     if (parsedText.sub != "") {
@@ -563,6 +644,9 @@ function selectNode(elem) {
     if (KEYS.control) {
         startDrawing(nodeId);
     }
+
+    // show view elements
+    showNodeConfiguration(nodeId);
 }
 
 function startDrawing(nodeId) {
@@ -580,7 +664,7 @@ function endDrawing(event) {
     for (let nodeId in graph) {
         // check if distance is low enough
         if (getDistance(coord, graph[nodeId].coords) > SIZE.nodeRadius) continue;
-        
+
         // check if there is no existing edge yet
         const existentEdge = node.to.find(e => e.node == nodeId);
         if (existentEdge) continue;
