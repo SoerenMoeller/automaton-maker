@@ -10,7 +10,6 @@ In general, NFAs, DFAs and TMs should be supported.
 
 ## Bugs
 - Arrow offset
-- Start arrow not selectable
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code

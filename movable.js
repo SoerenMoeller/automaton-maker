@@ -883,6 +883,10 @@ function makeDraggable(evt) {
                 case CONSTANTS.path:
                     selectEdge(target.parentNode);
                     break;
+                case CONSTANTS.start:
+                    // select the node the starting arrow is attached to
+                    selectNode(target.parentNode.parentNode);
+                    break;
                 default:
                     console.error("Unknown type selected");
             }
