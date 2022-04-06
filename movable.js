@@ -100,6 +100,8 @@ function handleKeyUpEvent(event) {
 }
 
 function handleKeyEvent(event) {
+    if (!event.code) return;
+
     if (ACTION.typing && (event.code.startsWith("Key") || event.code === "Backspace")) return;
 
     switch (event.code) {
@@ -132,6 +134,26 @@ function handleKeyEvent(event) {
         default:
             console.log(event.code);
     }
+}
+
+function showEdgeConfiguration(ids) {
+    const container = resetConfigurationView();
+
+    const textDescriptionContainer = createDescriptionContainer(container);
+    const textDescription = textDescriptionContainer.childNodes[1];
+    
+    const node = graph[ids.from];
+    const path = node.to.find(e => e.node == ids.to);
+    textDescription.value = path.desc;
+
+    textDescription.addEventListener("focusin", evt => ACTION.typing = true);
+    textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    textDescription.addEventListener("input", evt => {
+        evt.preventDefault();
+        path.desc = textDescription.value;
+
+        buildSVG();
+    });
 }
 
 function showNodeConfiguration(nodeId) {
@@ -298,10 +320,10 @@ function getNodeElemById(nodeId) {
 }
 
 function getPathElemByIds(fromId, toId) {
-    const selector = `${fromId}_${toId}`;
+    const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const nodeElem = document.getElementById(selector);
 
-    console.assert(nodeElem, "Couldn't find node");
+    console.assert(nodeElem, "Couldn't find path");
 
     return nodeElem;
 }
@@ -691,6 +713,8 @@ function selectEdge(elem) {
     // mark selected node
     const ids = getIdsOfPath(elem);
     setPathColor(ids.from, ids.to, COLOR_MARKED);
+
+    showEdgeConfiguration(ids);
 }
 
 function selectNode(elem) {
@@ -715,6 +739,7 @@ function reselect() {
     // this is needed because currently, everything gets redrawn
     if (!ACTION.selectedElement) return;
 
+    console.log(ACTION.selectedElement);
     switch (getIdPrefix(ACTION.selectedElement)) {
         case CONSTANTS.node:
             const nodeId = getIdOfNode(ACTION.selectedElement);

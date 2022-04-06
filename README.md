@@ -8,6 +8,7 @@ In general, NFAs, DFAs and TMs should be supported.
 - Multiple lines on edge labels
 - Text offset on self edges
 - Select elements after creation
+- Add delete button on select
 
 ## Bugs
 - Deleting nodes leaves the edges
