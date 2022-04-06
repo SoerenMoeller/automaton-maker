@@ -121,10 +121,10 @@ function handleKeyEvent(event) {
             removeElement();
             break;
         case "KeyS":
-            toggleStartNode();
+            toggleStartNode(true);
             break;
         case "KeyE":
-            toggleEndNode();
+            toggleEndNode(true);
             break;
         default:
             console.log(event.code);
@@ -138,7 +138,7 @@ function showNodeConfiguration(nodeId) {
     const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
     const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
     const textDescriptionContainer = createDescriptionContainer(container);
-    console.log(checkBoxEndContainer);
+
     const checkBoxEnd = checkBoxEndContainer.childNodes[1];
     const checkBoxStart = checkBoxStartContainer.childNodes[1];
     const textDescription = textDescriptionContainer.childNodes[1];
@@ -150,10 +150,8 @@ function showNodeConfiguration(nodeId) {
     textDescription.value = node.desc;
 
     // add events for change TODO
-    checkBoxEnd.addEventListener("click", evt => {
-        if (node.attributes.includes(CONSTANTS.end)) {
-        }
-    });
+    checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
+    checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
 }
 
 function resetConfigurationView() {
@@ -194,7 +192,7 @@ function createCheckBoxContainer(parent, text) {
     const upperCaseText = text[0].toUpperCase() + text.substring(1)
     const container = createContainerWithText(parent, upperCaseText);
 
-    createInputForm(container, "checkbox", text)
+    createInputForm(container, "checkbox", text + "CheckBox");
 
     return container;
 }
@@ -208,12 +206,21 @@ function createContainerWithText(parent, text) {
     return container;
 }
 
-function toggleEndNode() {
+function toggleEndNode(changeView) {
     if (!ACTION.selectedElement || ACTION.selectedElement.id.split("_")[0] != CONSTANTS.node) return;
-
+    
     const nodeId = ACTION.selectedElement.id.split("_")[1];
     const node = graph[nodeId];
-    if (node.attributes.includes(CONSTANTS.end)) {
+    const removeEnd = node.attributes.includes(CONSTANTS.end);
+
+    if (changeView) {
+        const checkBox = document.getElementById("endCheckBox");
+        console.log(checkBox);
+        console.log(document.getElementsByTagName("body")[0]);
+        checkBox.checked = !removeEnd;
+    }
+
+    if (removeEnd) {
         delete node.attributes[node.attributes.indexOf(CONSTANTS.end)];
     } else {
         node.attributes.push(CONSTANTS.end);
@@ -222,12 +229,19 @@ function toggleEndNode() {
     buildSVG();
 }
 
-function toggleStartNode() {
+function toggleStartNode(changeView) {
     if (!ACTION.selectedElement || ACTION.selectedElement.id.split("_")[0] != CONSTANTS.node) return;
 
     const nodeId = ACTION.selectedElement.id.split("_")[1];
     const node = graph[nodeId];
-    if (node.attributes.includes(CONSTANTS.start)) {
+    const removeStart = node.attributes.includes(CONSTANTS.start);
+
+    if (changeView) {
+        const checkBox = document.getElementById("startCheckBox");
+        checkBox.checked = !removeStart;
+    }
+
+    if (removeStart) {
         delete node.attributes[node.attributes.indexOf(CONSTANTS.start)];
         delete node.startAngle;
     } else {
