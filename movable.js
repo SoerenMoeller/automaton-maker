@@ -1025,6 +1025,8 @@ function getVectorFromAngle(angle) {
 }
 
 function downloadSVG(downloadLink) {
+    unselectAll();
+
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
     var svgUrl = URL.createObjectURL(svgBlob);
