@@ -273,7 +273,7 @@ function resetSVG() {
     createMarker(defs, CONSTANTS.arrowSelected, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR_MARKED, polygon);
     createMarker(defs, CONSTANTS.selfarrow, 16, 16, 23, -7.5, CONSTANTS.black, selfPolygon);
     createMarker(defs, CONSTANTS.selfarrowSelected, 16, 16, 23, -7.5, COLOR_MARKED, selfPolygon);
-    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, CONSTANTS.black, polygon);
+    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, COLOR_MARKED, polygon);
     svg.appendChild(defs);
 
     // style
@@ -282,7 +282,7 @@ function resetSVG() {
     svg.appendChild(style);
 
     // add default path for later usage
-    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, CONSTANTS.black);
+    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, COLOR_MARKED);
 }
 
 function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {
@@ -304,7 +304,7 @@ function createMarker(parent, id, width, height, refX, refY, color, polygonPoint
     parent.appendChild(marker);
 }
 
-function createPath(parent, id, dValue, stroke_width, marker, color, draggable=false) {
+function createPath(parent, id, dValue, stroke_width, marker, color, draggable = false) {
     const path = createSVGNode(CONSTANTS.path, {
         d: dValue,
         stroke: color,
@@ -441,7 +441,7 @@ function buildLines(id) {
     }
 }
 
-function createSVGNode(n, v={}) {
+function createSVGNode(n, v = {}) {
     n = document.createElementNS("http://www.w3.org/2000/svg", n);
     for (var p in v) {
         n.setAttributeNS(null, p.replace("_", "-"), v[p]);
@@ -517,7 +517,7 @@ function parseText(input) {
     return result;
 }
 
-function setNodeColor(nodeId, color=CONSTANTS.black) {
+function setNodeColor(nodeId, color = CONSTANTS.black) {
     const selector = `${CONSTANTS.node}_${nodeId}`;
     const node = document.getElementById(selector);
 
@@ -528,7 +528,7 @@ function setNodeColor(nodeId, color=CONSTANTS.black) {
     }
 }
 
-function setPathColor(fromId, toId, color=CONSTANTS.black) {
+function setPathColor(fromId, toId, color = CONSTANTS.black) {
     const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const node = document.getElementById(selector);
 
@@ -544,7 +544,7 @@ function selectEdge(elem) {
 
     // select the node
     ACTION.selectedElement = elem;
-    
+
     // mark selected node
     const ids = getIdsOfPath(elem);
     setPathColor(ids.from, ids.to, COLOR_MARKED);
@@ -560,11 +560,61 @@ function selectNode(elem) {
     const nodeId = getIdOfNode(elem);
     setNodeColor(nodeId, COLOR_MARKED);
 
-    ACTION.draw = KEYS.control;
     if (KEYS.control) {
-        ACTION.drawStartNodeId = nodeId;
-        return;
+        startDrawing(nodeId);
     }
+}
+
+function startDrawing(nodeId) {
+    unselectAll();
+
+    ACTION.draw = true;
+    ACTION.drawStartNodeId = nodeId;
+}
+
+function endDrawing(event) {
+    // mount the path if on another node (or else throw it away)
+    const coord = getMousePosition(event);
+    const node = graph[ACTION.drawStartNodeId];
+
+    for (let nodeId in graph) {
+        // check if distance is low enough
+        if (getDistance(coord, graph[nodeId].coords) > SIZE.nodeRadius) continue;
+        
+        // check if there is no existing edge yet
+        const existentEdge = node.to.find(e => e.node == nodeId);
+        if (existentEdge) continue;
+
+        const newEdge = {
+            node: parseInt(nodeId),
+            desc: ""
+        }
+
+        // check if self edge or normal edge
+        if (ACTION.drawStartNodeId === nodeId) {
+            newEdge.angle = 0;
+        } else {
+            newEdge.offset = 0;
+            newEdge.textOffset = -2;
+        }
+
+        // add the edge to the logic
+        node.to.push(newEdge);
+        buildSVG();
+
+        // highlight the edge
+        const selector = `${CONSTANTS.path}_${ACTION.drawStartNodeId}-${nodeId}`;
+        const path = document.getElementById(selector);
+        console.log(svg);
+        selectEdge(path);
+        break;
+    }
+
+    const defaultPath = document.getElementById(CONSTANTS.defaultPath);
+    defaultPath.setAttributeNS(null, "d", "")
+
+    ACTION.draw = false;
+    ACTION.drawStartNodeId = -1;
 }
 
 function getIdPrefix(elem) {
@@ -576,7 +626,7 @@ function getIdOfNode(node) {
 }
 
 function getIdsOfPath(path) {
-    const ids = path.split("_")[1];
+    const ids = path.id.split("_")[1].split("-");
     return { from: ids[0], to: ids[1] };
 }
 
@@ -884,50 +934,19 @@ function makeDraggable(evt) {
 
     function endDrag(evt) {
         if (ACTION.draw) {
-            // mount the path if on another node (or else throw it away)
-            const coord = getMousePosition(evt);
-            const node = graph[ACTION.drawStartNodeId];
-            for (let nodeId in graph) {
-                if (getDistance(coord, graph[nodeId].coords) < SIZE.nodeRadius) {
-                    const existentEdge = node.to.find(e => e.node == nodeId);
-
-                    if (!existentEdge) {
-                        const newEdge = {
-                            node: parseInt(nodeId),
-                            desc: ""
-                        }
-
-                        if (ACTION.drawStartNodeId === nodeId) {
-                            newEdge.angle = 0;
-                        } else {
-                            newEdge.offset = 0;
-                            newEdge.textOffset = -2;
-                        }
-
-                        node.to.push(newEdge);
-
-                        buildSVG();
-                    }
-                    break;
-                }
-            }
-
-            const defaultPath = document.getElementById(CONSTANTS.defaultPath);
-            defaultPath.setAttributeNS(null, "d", "")
+            endDrawing(evt)
         }
 
-        ACTION.draw = false;
         ACTION.selectedDragElement = null;
-        ACTION.drawStartNodeId = -1;
     }
+}
 
-    function getMousePosition(evt) {
-        var CTM = svg.getScreenCTM();
-        return {
-            x: (evt.clientX - CTM.e) / CTM.a,
-            y: (evt.clientY - CTM.f) / CTM.d
-        };
-    }
+function getMousePosition(evt) {
+    var CTM = svg.getScreenCTM();
+    return {
+        x: (evt.clientX - CTM.e) / CTM.a,
+        y: (evt.clientY - CTM.f) / CTM.d
+    };
 }
 
 function correctEdges(pathList, id, to) {
