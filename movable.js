@@ -547,8 +547,14 @@ function buildLines(id) {
         }
 
         const markerEnd = id != nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
-        createPath(pathContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
-        createPath(pathContainer, "", dValue, 0.1, markerEnd, CONSTANTS.black, true);
+        const outerPath = createPath(pathContainer, "", dValue, 1, "", CONSTANTS.transparent, true);
+        const innerPath = createPath(pathContainer, "", dValue, 0.1, markerEnd, CONSTANTS.black, true);
+
+        if (id == nodeId) {
+            const path = node.to.find(e => e.node == id);
+            outerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
+            innerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
+        }
 
         // append the text in the middle of the node
         if (id != nodeId) {
@@ -563,6 +569,7 @@ function buildLines(id) {
         } else {
             const path = node.to.find(e => e.node == id);
             const angleVector = getVectorFromAngle(path.angle);
+
             const textCoords = {
                 x: node.coords.x + angleVector.x * DISTANCE.selfEdgeText,
                 y: node.coords.y + angleVector.y * DISTANCE.selfEdgeText

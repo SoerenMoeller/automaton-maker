@@ -13,7 +13,7 @@ In general, NFAs, DFAs and TMs should be supported.
 - Deleting nodes leaves the edges
 - No edge offset drawn on load
 - Arrow offset
-- Toggle end node sets back self edge
+- Start arrow not selectable
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code
