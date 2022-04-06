@@ -174,13 +174,17 @@ function addNode() {
     graph[highestId++] = node;
 
     buildSVG();
+
+    // highlight the node after builing it
+    const selector = `${CONSTANTS.node}_${highestId - 1}`;
+    const nodeElem = document.getElementById(selector);
+    selectNode(nodeElem);
 }
 
 function removeElement() {
-    if (!selectedElement) return;
+    if (!ACTION.selectedElement) return;
 
-    const id = selectedElement.id;
-    const name = id.split("_")[0];
+    const name = getIdPrefix(ACTION.selectedElement);
 
     switch (name) {
         case CONSTANTS.node:
@@ -193,23 +197,22 @@ function removeElement() {
             console.error("Trying to delete unknown type");
     }
 
-    selectedElement = null;
+    ACTION.selectedElement = null;
 }
 
 function removePath() {
-    const ids = selectedElement.id.split("_")[1].split("-");
-    const fromId = ids[0];
-    const toId = ids[1];
+    const ids = getIdsOfPath(ACTION.selectedElement);
 
     // remove edge from logic
-    graph[fromId].to = graph[fromId].to.filter(e => e.node != toId);
+    let to = graph[ids.from].to;
+    to = to.filter(e => e.node != ids.to);
 
     // remove from view
-    selectedElement.parentNode.removeChild(selectedElement);
+    ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
 }
 
 function removeNode() {
-    const nodeId = selectedElement.id.split("_")[1];
+    const nodeId = getIdOfNode(ACTION.selectedElement);
 
     // fetch edges related to the node
     let edgeFrom = getEdgesFromNode(nodeId);
@@ -228,7 +231,7 @@ function removeNode() {
     delete graph[nodeId];
 
     // remove from view
-    selectedElement.parentNode.removeChild(selectedElement);
+    ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
 }
 
 function removePathFromView(edges, id, to) {
@@ -536,6 +539,47 @@ function setPathColor(fromId, toId, color=CONSTANTS.black) {
     node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${color == CONSTANTS.black ? CONSTANTS.arrow : CONSTANTS.arrowSelected}`);
 }
 
+function selectEdge(elem) {
+    unselectAll();
+
+    // select the node
+    ACTION.selectedElement = elem;
+    
+    // mark selected node
+    const ids = getIdsOfPath(elem);
+    setPathColor(ids.from, ids.to, COLOR_MARKED);
+}
+
+function selectNode(elem) {
+    unselectAll();
+
+    // select the node
+    ACTION.selectedElement = elem;
+
+    // mark selected node
+    const nodeId = getIdOfNode(elem);
+    setNodeColor(nodeId, COLOR_MARKED);
+
+    ACTION.draw = KEYS.control;
+    if (KEYS.control) {
+        ACTION.drawStartNodeId = nodeId;
+        return;
+    }
+}
+
+function getIdPrefix(elem) {
+    return elem.id.split("_")[0];
+}
+
+function getIdOfNode(node) {
+    return node.id.split("_")[1];
+}
+
+function getIdsOfPath(path) {
+    const ids = path.split("_")[1];
+    return { from: ids[0], to: ids[1] };
+}
+
 /* ========================================== Dragging logic ========================================== */
 function makeDraggable(evt) {
     var svg = evt.target;
@@ -554,41 +598,14 @@ function makeDraggable(evt) {
         if (target.classList.contains(CONSTANTS.draggable)) {
             switch (prefix) {
                 case CONSTANTS.node:
-                    selectNode(target, id);
+                    selectNode(target.parentNode);
                     break;
                 case CONSTANTS.path:
-                    selectEdge(target, id);
+                    selectEdge(target.parentNode);
                     break;
                 default:
                     console.log("Unknown type selected");
             }
-        }
-    }
-
-    function selectEdge(target, id) {
-        unselectAll();
-
-        // select the node
-        selectedElement = target.parentNode;
-        
-        // mark selected node
-        const ids = id.split("_")[1].split("-");
-        setPathColor(ids[0], ids[1], COLOR_MARKED);
-    }
-
-    function selectNode(target, id) {
-        unselectAll();
-
-        // select the node
-        selectedElement = target.parentNode;
-
-        // mark selected node
-        setNodeColor(id.split("_")[1], COLOR_MARKED);
-
-        ACTION.draw = KEYS.control;
-        if (KEYS.control) {
-            ACTION.drawStartNodeId = id.split("_")[1];
-            return;
         }
     }
 

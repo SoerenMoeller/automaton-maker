@@ -44,7 +44,6 @@ button, a {
     border: 1px solid #213A73;
     border-radius: 5px;
 
-    line-height: 150%;
     text-align: center;
 
     width: 12%;
@@ -55,6 +54,12 @@ button, a {
 
 button:active, a:active {
     background-color: #354E87;
+}
+
+a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #top, #bottom {
