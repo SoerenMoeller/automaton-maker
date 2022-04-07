@@ -9,7 +9,6 @@ const COLOR = {
 
 const THRESHOLDS = {
     straightEdge: 2,
-    text: 3,
     angle: 15
 };
 
@@ -81,7 +80,7 @@ function main() {
     svg = document.getElementsByTagName("svg")[0];
 
     // init the svg
-    resetSVG();
+    buildSVG();
 
     // fix reset width
     const resetImg = document.getElementsByTagName("img")[0];
@@ -112,7 +111,7 @@ function handleKeyUpEvent(event) {
 function handleKeyEvent(event) {
     if (!event.code) return;
 
-    if (ACTION.typing && (event.code.startsWith("Key") || event.code === "Backspace")) return;
+    if (ACTION.typing && event.code != "Escape") return;
 
     switch (event.code) {
         case "KeyA":
@@ -641,10 +640,10 @@ function buildLines(id) {
             const angleVector = getVectorFromAngle(path.angle);
 
             const textCoords = {
-                x: node.coords.x + angleVector.x * DISTANCE.selfEdgeText,
-                y: node.coords.y + angleVector.y * DISTANCE.selfEdgeText
+                x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - path.textOffset),
+                y: node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - path.textOffset)
             }
-            createTextNode(pathContainer, textCoords, path.desc, false);
+            createTextNode(pathContainer, textCoords, path.desc, true);
         }
     }
 }
@@ -825,7 +824,8 @@ function endDrawing(event) {
 
         const newEdge = {
             node: parseInt(nodeId),
-            desc: ""
+            desc: "",
+            textOffset: -2
         }
 
         // check if self edge or normal edge
@@ -833,7 +833,6 @@ function endDrawing(event) {
             newEdge.angle = 0;
         } else {
             newEdge.offset = 0;
-            newEdge.textOffset = -2;
         }
 
         // add the edge to the logic
@@ -969,16 +968,16 @@ function makeDraggable(evt) {
     function dragText(coord) {
         // get the id of the node
         const pathContainer = ACTION.selectedDragElement.parentNode;
-        const ids = pathContainer.id.split("_")[1];
-        const startId = ids.split("-")[0];
-        const endId = ids.split("-")[1];
+        const ids = getIdsOfPath(pathContainer);
+        const startId = ids.from;
+        const endId = ids.to;
         const startNode = graph[startId];
         const endNode = graph[endId];
 
         const middle = getMiddleOfVector(startNode.coords, endNode.coords);
         const directionVector = { x: endNode.coords.x - startNode.coords.x, y: endNode.coords.y - startNode.coords.y };
-        const dot = getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
-        const length = getLength(directionVector);
+        let dot = getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
+        let length = getLength(directionVector);
         let dist = -dot / length;
 
         const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
@@ -986,11 +985,26 @@ function makeDraggable(evt) {
         const edgeOffset = path.offset / 2;
         dist -= edgeOffset;
 
-        if (dist < THRESHOLDS.text && dist > -THRESHOLDS.text) {
+        // handle self edge text
+        if (startId === endId) {
+            const angleVector = getVectorFromAngle(path.angle);
+            const basePosition = {x: startNode.coords.x + angleVector.x * DISTANCE.selfEdgeText, y: startNode.coords.y + angleVector.y * DISTANCE.selfEdgeText };
+            const normalAngle = getNormalVector(startNode.coords, basePosition);
+
+            dot = getDotProduct({ x: coord.x - basePosition.x, y: coord.y - basePosition.y }, normalAngle);
+            length = getLength(normalAngle);
+            dist = -dot / length;
             path.textOffset = dist;
-            ACTION.selectedDragElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
-            ACTION.selectedDragElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
-        }
+
+            ACTION.selectedDragElement.setAttributeNS(null, "x", startNode.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
+            ACTION.selectedDragElement.setAttributeNS(null, "y", startNode.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist));
+
+            return;
+        } 
+
+        path.textOffset = dist;
+        ACTION.selectedDragElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
+        ACTION.selectedDragElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
     }
 
     function dragSelfEdge(coord) {
@@ -1241,9 +1255,10 @@ function correctSelfEdgeText(elem, id) {
     const node = graph[id];
     const path = node.to.find(e => e.node == id);
     const angleVector = getVectorFromAngle(path.angle);
+    const dist = path.textOffset;
 
-    elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * DISTANCE.selfEdgeText);
-    elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * DISTANCE.selfEdgeText);
+    elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
+    elem.setAttributeNS(null, "y", node.coords.y + anglaeVector.y * (DISTANCE.selfEdgeText - dist));
 }
 
 /* ========================================== Vector methods ========================================== */
@@ -1317,6 +1332,7 @@ function getVectorFromAngle(angle) {
 
 function downloadSVG(downloadLink) {
     unselectAll();
+    toggleGridView();
 
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });

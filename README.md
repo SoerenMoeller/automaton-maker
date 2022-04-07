@@ -6,7 +6,6 @@ In general, NFAs, DFAs and TMs should be supported.
 ## For the future
 - Labels on nodes
 - Multiple lines on edge labels
-- Text offset on self edges
 
 ## Bugs
 - Arrow offset
@@ -16,12 +15,13 @@ In general, NFAs, DFAs and TMs should be supported.
 - Convert the automaton into img-File
 
 ## Usage
-- Click: Select a node/edge
+- Click: Select an element
 - a: Create a node
 - s: Make selected node a starting node
 - e: Make selected node an ending node
 - Ctrl+Drag: Draw edge (from selected node)
-- Del/Back: Remove a selected node
+- Del/Back: Remove selected element
 - Esc: Unselect
-- Drag: Drag nodes, change curve of edge or rearrange position of start/self-edges
+- Drag: Drag nodes, change curve of edge or rearrange position of start/self-edges, drag text offset from edges
+- Shift: Activate grid view for precise positioning
 
