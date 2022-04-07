@@ -83,6 +83,10 @@ function main() {
     // init the svg
     resetSVG();
 
+    // fix reset width
+    const resetImg = document.getElementsByTagName("img")[0];
+    resetImg.style.width = resetImg.height + "px";
+
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 
@@ -1037,6 +1041,9 @@ function makeDraggable(evt) {
         if (dist < THRESHOLDS.straightEdge && dist > -THRESHOLDS.straightEdge) {
             dist = 0;
         }
+        if (ACTION.showGrid) {
+            dist = getClosestStep(dist, 100, SIZE.grid);
+        }
 
         // update the offset in the data
         const entry = startNode.to.find(e => e.node == endId);
@@ -1349,6 +1356,8 @@ function removeEdgesToNode(id) {
 }
 
 function getClosestStep(val, end, step) {
+    const negative = val < 0;
+    val = Math.abs(val);
     let dist = Number.MAX_VALUE;
     let newValue;
     for (let i = 0; i <= end; i += step) {
@@ -1358,5 +1367,5 @@ function getClosestStep(val, end, step) {
         }
     }
 
-    return newValue;
+    return negative ? -newValue : newValue;
 }
