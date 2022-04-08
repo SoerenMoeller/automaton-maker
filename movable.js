@@ -1,3 +1,5 @@
+import { convertToLaTeX } from './converter.js';
+
 document.addEventListener("DOMContentLoaded", main);
 
 const COLOR = {
@@ -73,15 +75,49 @@ const CONSTANTS = {
 
 // used to give every element an unique id
 let highestId = 0;
-let graph = {};
+let graph = {
+    0: {
+        desc: "q_0",
+        attributes: ["start"],
+        startAngle: 300,
+        to: [
+            {
+                node: 0,
+                desc: "a",
+                textOffset: -2,
+                angle: 45
+            },
+            {
+                node: 1, 
+                desc: "b",
+                textOffset: -2,
+                offset: 5
+            }
+        ],
+        coords: {
+            x: 20,
+            y: 20
+        }
+    },
+    1: {
+        desc: "q^1",
+        attributes: ["end"],
+        to: [],
+        coords: {
+            x: 40,
+            y: 25
+        }
+    }
+};
 let svg;
 
 function main() {
     // find the svg to draw in
     svg = document.getElementsByTagName("svg")[0];
+    svg.addEventListener("load", makeDraggable);
 
     // init the svg
-    resetSVG();
+    buildSVG();
 
     // fix reset width
     const resetImg = document.getElementsByTagName("img")[0];
@@ -93,9 +129,11 @@ function main() {
     const resetButton = document.getElementById("resetContainer");
     const downloadButton = document.getElementsByTagName("a")[0];
     const addButton = document.getElementById("addButton");
+    const convertButton = document.getElementById("convertButton");
     resetButton.addEventListener("click", e => resetAll());
     downloadButton.addEventListener("click", e => downloadSVG(downloadButton));
     addButton.addEventListener("click", e => addNode());
+    convertButton.addEventListener("click", e => convertToLaTeX(graph));
 }
 
 function resetAll() {

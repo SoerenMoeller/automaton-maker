@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles/reset.css">
   <link rel="stylesheet" href="styles/style.css">
 
-  <script src="movable.js"></script>
+  <script src="movable.js" type="module"></script>
 </head>
 
 <body>
@@ -20,9 +20,12 @@
       <button id="addButton">add node</button>
       <div class="flow-right"></div>
     </div>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" onload="makeDraggable(evt)"></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"></svg>
     <div id="bottom">
-      <a id="downloadButton">Download</a>
+      <div id="actionContainer">
+        <a id="downloadButton">Download</a>
+        <button id="convertButton">Convert</button>
+      </div>
       <div id="resetContainer">
         <p>Reset</p>
         <img src="img/reload.svg" alt="reload_img">
