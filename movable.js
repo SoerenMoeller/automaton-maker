@@ -919,6 +919,12 @@ function makeDraggable(evt) {
         const target = evt.target;
         const id = target.parentNode.id;
         const prefix = id.split("_")[0];
+
+        if (target === svg) {
+            unselectAll();
+            return;
+        }
+
         if (target.classList.contains(CONSTANTS.draggable)) {
             switch (prefix) {
                 case CONSTANTS.node:

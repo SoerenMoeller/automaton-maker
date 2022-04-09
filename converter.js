@@ -9,12 +9,12 @@ export function convertToLaTeX(graph) {
 
     output += convertEdges(graph);
 
-    output += "\\end{tikzpicture}";
+    output += "\n\\end{tikzpicture}";
     console.log(output);
 }
 
 function getTikzHeader() {
-    return "\\begin{tikzpicture}[->, >=stealth, semithick]\n\\tikzset{every state}=[minimum size = 0.4cm]\n\n\n";
+    return "\\begin{tikzpicture}[->, >=stealth, semithick]\n\\tikzset{every state}=[minimum size = 0.4cm]\n\n";
 }
 
 function convertNode(nodeId, graph) {
@@ -221,7 +221,28 @@ function getEdgeTextPosition(nodeId, otherId, graph) {
     const otherNode = graph[otherId];
     const edge = node.to.find(e => e.node == otherId);
 
+    const offset = {
+        x: otherNode.coords.x - node.coords.x,
+        y: otherNode.coords.y - node.coords.y
+    }
+    const direction = getDirectionVector(node.coords, otherNode.coords);
+    console.log(direction);
+
     let position = "";
+    // TODO: fix neg values
+    const threshold = 5;
+    const dominantX = direction.x > direction.y * threshold;
+    const dominantY = direction.y > direction.x * threshold;
+
+    if (!dominantX && !dominantY) {
+        console.log("both");
+    }
+    if (direction.x > direction.y * threshold) {
+        console.log("above/below");
+    }
+    if (direction.y > direction.x * threshold) {
+        console.log("right/left");
+    }
 
     return position;
 }
@@ -253,4 +274,11 @@ function getSelfEdgeTextPosition(nodeId, graph) {
     }
 
     return position;
+}
+
+function getDirectionVector(vectorA, vectorB) {
+    return {
+        x: vectorB.x - vectorA.x,
+        y: vectorB.y - vectorA.y
+    };
 }
