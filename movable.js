@@ -1296,7 +1296,7 @@ function correctSelfEdgeText(elem, id) {
     const dist = path.textOffset;
 
     elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
-    elem.setAttributeNS(null, "y", node.coords.y + anglaeVector.y * (DISTANCE.selfEdgeText - dist));
+    elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist));
 }
 
 /* ========================================== Vector methods ========================================== */

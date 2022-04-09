@@ -14,7 +14,7 @@ export function convertToLaTeX(graph) {
 }
 
 function getTikzHeader() {
-    return "\\begin{tikzpicture}[->, >=stealth, semithick]\n\n";
+    return "\\begin{tikzpicture}[->, >=stealth, semithick]\n\\tikzset{every state}=[minimum size = 0.4cm]\n\n\n";
 }
 
 function convertNode(nodeId, graph) {
@@ -81,21 +81,35 @@ function createRelativeCoords(nodeId, firstNodeId, graph) {
 
     // add the distance
     if (difference.y !== 0 && difference.y !== 0) {
-        positionTex += `${mapDistance(difference.y)}cm and ${mapDistance(difference.x)}cm of ${firstNodeId}] `;
+        positionTex += `${mapDistanceY(difference.y)}cm and ${mapDistanceX(difference.x)}cm of ${firstNodeId}] `;
     } else if (difference.y !== 0) {
-        positionTex += `${mapDistance(difference.y)}cm of ${firstNodeId}] `;
+        positionTex += `${mapDistanceY(difference.y)}cm of ${firstNodeId}] `;
     } else {
-        positionTex += `${mapDistance(difference.x)}cm of ${firstNodeId}] `;
+        positionTex += `${mapDistanceX(difference.x)}cm of ${firstNodeId}] `;
     }
 
     return positionTex;
 }
 
-function mapDistance(dist) {
+function mapBending(bend) {
+    return 3 * bend;
+}
+
+function mapDistanceX(dist) {
     // max width of 10cm
     const width = 10;
+    const ratio = dist / width;
 
-    return roundTo2Digits(dist / width);
+    return roundTo2Digits(ratio);
+}
+
+function mapDistanceY(dist) {
+    // max width of 10cm
+    const width = 10;
+    const ratio = dist / width;
+    const radius = 0.4;
+
+    return roundTo2Digits(ratio - 1.5 * radius);
 }
 
 function roundTo2Digits(num) {
@@ -134,7 +148,7 @@ function convertEdge(nodeId, graph) {
             const dist = 15;
 
             // TODO: figure out distance / position of text
-            edgeTex += `[out=${mod(correctAngle - dist)}, in=${mod(correctAngle + dist)}, loop]`;
+            edgeTex += `[out=${mod(correctAngle + dist)}, in=${mod(correctAngle - dist)}, loop]`;
         } else {
             const offset = edge.offset;
             
@@ -142,12 +156,18 @@ function convertEdge(nodeId, graph) {
             edgeTex += "[";
 
             if (offset !== 0) {
-                edgeTex += `bend ${offset < 0 ? "left" : "right"}=${offset}`;
+                edgeTex += `bend ${offset < 0 ? "left" : "right"}=${mapBending(offset)}`;
             }
             edgeTex += "]";
         }
         
-        edgeTex += ` node {${edge.desc}} (${otherId})\n`;
+        edgeTex += " node ";
+
+        if (edge.desc.length !== 0) {
+            edgeTex += `[${getEdgeTextPosition(nodeId, otherId, graph)}] `;
+        }
+
+        edgeTex += `{${edge.desc}} (${otherId})\n`;
 
         // for formatting only
         edgeTex += " ".repeat(9 + nodeId.toString().length);
@@ -175,16 +195,14 @@ function getPositionFromAngle(angle) {
     }
 
     let direction;
-    // TODO: buggy
-    console.log(angle, mod(position.top - eighthDegree), mod(position.top + eighthDegree))
-    if (angle > mod(position.top - eighthDegree) && (angle < mod(position.top + eighthDegree))) {
-        direction = "above";
+    if (angle > mod(position.left - eighthDegree) && (angle < mod(position.left + eighthDegree))) {
+        direction = "left";
     } else if (angle > mod(position.right - eighthDegree) && (angle < mod(position.right + eighthDegree))) {
         direction = "right";
     } else if (angle > mod(position.bottom - eighthDegree) && (angle < mod(position.bottom + eighthDegree))) {
         direction = "below";
     } else {
-        direction = "left";
+        direction = "above";
     } 
 
     return direction;
@@ -194,4 +212,45 @@ function getPositionFromAngle(angle) {
 function mod(n) {
     const m = 360;
     return ((n % m) + m) % m;
-  }
+}
+
+function getEdgeTextPosition(nodeId, otherId, graph) {
+    if (nodeId == otherId) return getSelfEdgeTextPosition(nodeId, graph);
+
+    const node = graph[nodeId];
+    const otherNode = graph[otherId];
+    const edge = node.to.find(e => e.node == otherId);
+
+    let position = "";
+
+    return position;
+}
+
+function getSelfEdgeTextPosition(nodeId, graph) {
+    const node = graph[nodeId];
+    const edge = node.to.find(e => e.node == nodeId);
+    const angle = edge.angle;
+    const eighthDegree = 45;
+    const sixteenthDegree = eighthDegree / 2;
+
+    let position;
+    if (angle > sixteenthDegree && angle < sixteenthDegree + eighthDegree) {
+        position = "above right";
+    } else if (angle > sixteenthDegree * 3 && angle < sixteenthDegree * 3 + eighthDegree) {
+        position = "right";
+    } else if (angle > sixteenthDegree * 5 && angle < sixteenthDegree * 5 + eighthDegree) {
+        position = "below right";
+    } else if (angle > sixteenthDegree * 7 && angle < sixteenthDegree * 7 + eighthDegree) {
+        position = "below";
+    } else if (angle > sixteenthDegree * 9 && angle < sixteenthDegree * 9 + eighthDegree) {
+        position = "below left";
+    } else if (angle > sixteenthDegree * 11 && angle < sixteenthDegree * 11 + eighthDegree) {
+        position = "left";
+    } else if (angle > sixteenthDegree * 13 && angle < sixteenthDegree * 13 + eighthDegree) {
+        position = "above left";
+    } else {
+        position = "above";
+    }
+
+    return position;
+}
