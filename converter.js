@@ -147,18 +147,13 @@ function convertEdge(nodeId, graph) {
             const correctAngle = convertAngle(edge.angle);
             const dist = 15;
 
-            // TODO: figure out distance / position of text
             edgeTex += `[out=${mod(correctAngle + dist)}, in=${mod(correctAngle - dist)}, loop]`;
         } else {
             const offset = edge.offset;
-            
-            // TODO: figure out text position
-            edgeTex += "[";
 
             if (offset !== 0) {
-                edgeTex += `bend ${offset < 0 ? "left" : "right"}=${mapBending(offset)}`;
+                edgeTex += `[bend ${offset < 0 ? "left" : "right"}=${mapBending(offset)}]`;
             }
-            edgeTex += "]";
         }
         
         edgeTex += " node ";
@@ -220,28 +215,45 @@ function getEdgeTextPosition(nodeId, otherId, graph) {
     const node = graph[nodeId];
     const otherNode = graph[otherId];
     const edge = node.to.find(e => e.node == otherId);
+    const offset = edge.textOffset;
 
-    const offset = {
-        x: otherNode.coords.x - node.coords.x,
-        y: otherNode.coords.y - node.coords.y
-    }
     const direction = getDirectionVector(node.coords, otherNode.coords);
-    console.log(direction);
+
+    const threshold = 5;
+    const dominantX = Math.abs(direction.x) > Math.abs(direction.y) * threshold;
+    const dominantY = Math.abs(direction.y) > Math.abs(direction.x) * threshold;
 
     let position = "";
-    // TODO: fix neg values
-    const threshold = 5;
-    const dominantX = direction.x > direction.y * threshold;
-    const dominantY = direction.y > direction.x * threshold;
-
     if (!dominantX && !dominantY) {
-        console.log("both");
-    }
-    if (direction.x > direction.y * threshold) {
-        console.log("above/below");
-    }
-    if (direction.y > direction.x * threshold) {
-        console.log("right/left");
+        if (direction.x < 0 && direction.y < 0 && offset < 0) {
+            position = "below left";
+        } else if (direction.x < 0 && direction.y < 0 && offset > 0) {
+            position = "above right";
+        } else if (direction.x < 0 && direction.y > 0 && offset < 0) {
+            position = "below right";
+        } else if (direction.x < 0 && direction.y > 0 && offset > 0) {
+            position = "above left";
+        } else if (direction.x > 0 && direction.y < 0 && offset < 0) {
+            position = "above left";
+        } else if (direction.x > 0 && direction.y < 0 && offset > 0) {
+            position = "below right";
+        } else if (direction.x > 0 && direction.y > 0 && offset < 0) {
+            position = "above right";
+        } else {
+            position = "below left";
+        }
+    } else if (dominantX) {
+        if ((offset > 0 && direction.x > 0) || (offset < 0 && direction.x < 0)) {
+            position = "below";
+        } else {
+            position = "above";
+        }
+    } else {
+        if ((offset > 0 && direction.y > 0) || (offset < 0 && direction.y < 0)) {
+            position = "left";
+        } else {
+            position = "right";
+        }
     }
 
     return position;
