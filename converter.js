@@ -96,6 +96,8 @@ function mapBending(bend) {
 }
 
 function mapDistanceX(dist) {
+    dist = Math.abs(dist);
+
     // max width of 10cm
     const width = 10;
     const ratio = dist / width;
@@ -104,6 +106,8 @@ function mapDistanceX(dist) {
 }
 
 function mapDistanceY(dist) {
+    dist = Math.abs(dist);
+
     // max width of 10cm
     const width = 10;
     const ratio = dist / width;
@@ -124,8 +128,7 @@ function convertEdges(graph) {
     }
 
     if (edgesTex !== "") {
-        edgesTex = "\\path " + edgesTex;
-        edgesTex += ";\n"
+        edgesTex = "\\path " + edgesTex + ";\n";
     }
 
     return edgesTex;

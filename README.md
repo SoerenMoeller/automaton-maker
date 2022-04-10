@@ -6,9 +6,13 @@ In general, NFAs, DFAs and TMs should be supported.
 ## For the future
 - Labels on nodes
 - Multiple lines on edge labels
+- Snapping of text in grid mode
+- Multiple size options
+- View to copy LaTeX from
 
 ## Bugs
 - Arrow offset
+- LaTeX converter doesn't parse the text yet
 
 ## Hot features to come
 - Convert the automaton into LaTeX-Code

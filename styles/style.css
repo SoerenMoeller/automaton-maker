@@ -1,6 +1,11 @@
-body {
+* {
+    --button-height: 1.7rem;
+    --svg-size: 80vmin; 
+}
+
+html {
     font-family: 'Open Sans', sans-serif;
-    font-size: 0.9rem;
+    font-size: 1.4vw;
 }
 
 p {
@@ -21,34 +26,36 @@ main {
 }
 
 svg {
-    min-width: 80vmin;
-    min-height: 80vmin;
-    width: 80vmin;
-    height: 80vmin;
+    min-width: var(--svg-size);
+    min-height: var(--svg-size);
+    width: var(--svg-size);
+    height: var(--svg-size);
 
     background-color: rgb(235, 235, 235);
     border: 1px solid rgb(163, 192, 246);
-    border-radius: 10px;
+    border-radius: 0.25rem;
 }
 
 img {
-    height: 100%;
-    width: 10px;
+    height: var(--button-height);
+    width: var(--button-height);
+
+    margin: 0 0.5rem;
     background-color: #88FA76;
     border: 1px solid black;
-    border-radius: 5px;
+    border-radius: 0.25rem;
 }
 
 button, a {
     color: white;
     background-color: #4D6BB0;
     border: 1px solid #213A73;
-    border-radius: 5px;
+    border-radius: 0.25rem;
 
     text-align: center;
 
-    width: 5rem;
-    height: 35%;
+    width: 6rem;
+    height: var(--button-height);
 
     cursor: pointer;
 }
@@ -79,7 +86,8 @@ a {
 #top, #bottom {
     height: 10vmin;
     min-height: 10vmin;
-    width: 80vmin;
+    width: var(--svg-size);
+    min-width: var(--svg-size);
 
     display: flex;
     align-items: center;
@@ -93,8 +101,7 @@ a {
     display: flex;
     align-items: center;
 
-    gap: 0.5rem;
-    height: 35%;
+    height: var(--button-height);
     cursor: pointer;
 }
 
