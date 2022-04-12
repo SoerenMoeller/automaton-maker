@@ -1,4 +1,5 @@
 import { convertToLaTeX } from './converter.js';
+import * as vector from './vectors.js';
 
 document.addEventListener("DOMContentLoaded", main);
 
@@ -792,7 +793,7 @@ function buildNode(id) {
 
     // create starting arrow
     if (node.attributes.includes(CONSTANTS.start)) {
-        const startAngle = getVectorFromAngle(node.startAngle);
+        const startAngle = vector.getVectorFromAngle(node.startAngle);
         const length = SIZE.nodeRadius + DISTANCE.startEdge;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
@@ -824,8 +825,8 @@ function buildLines(id) {
         const pathContainer = createContainer(svg, `${CONSTANTS.path}_${id}-${nodeId}`);
 
         // create line
-        const middle = getMiddleOfVector(coords, otherCoords);
-        const normalVector = getUnitVector(getNormalVector(coords, otherCoords));
+        const middle = vector.getMiddleOfVector(coords, otherCoords);
+        const normalVector = vector.getNormalVector(coords, otherCoords);
         const dist = node.to[otherNode].offset;
         let dValue = `M${coords.x} ${coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${otherCoords.x} ${otherCoords.y}`;
 
@@ -846,8 +847,8 @@ function buildLines(id) {
 
         // append the text in the middle of the node
         if (id != nodeId) {
-            const normalVector = getUnitVector(getNormalVector(node.coords, otherCoords));
-            const middle = getMiddleOfVector(node.coords, otherCoords);
+            const normalVector = vector.getNormalVector(node.coords, otherCoords);
+            const middle = vector.getMiddleOfVector(node.coords, otherCoords);
             const offset = node.to.find(e => e.node == nodeId).textOffset;
             const textCoords = {
                 x: middle.x + normalVector.x * (dist / 2 + offset),
@@ -856,7 +857,7 @@ function buildLines(id) {
             createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
         } else {
             const path = node.to.find(e => e.node == id);
-            const angleVector = getVectorFromAngle(path.angle);
+            const angleVector = vector.getVectorFromAngle(path.angle);
 
             const textCoords = {
                 x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - path.textOffset),
@@ -1035,7 +1036,7 @@ function endDrawing(event) {
 
     for (let nodeId in graph) {
         // check if distance is low enough
-        if (getDistance(coord, graph[nodeId].coords) > SIZE.nodeRadius) continue;
+        if (vector.getDistance(coord, graph[nodeId].coords) > SIZE.nodeRadius) continue;
 
         // check if there is no existing edge yet
         const existentEdge = node.to.find(e => e.node == nodeId);
@@ -1199,25 +1200,25 @@ function makeDraggable(evt) {
         const startNode = graph[startId];
         const endNode = graph[endId];
 
-        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
+        const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
         const directionVector = { x: endNode.coords.x - startNode.coords.x, y: endNode.coords.y - startNode.coords.y };
-        let dot = getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
-        let length = getLength(directionVector);
+        let dot = vector.getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
+        let length = vector.getLength(directionVector);
         let dist = -dot / length;
 
-        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+        const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
         const path = graph[startId].to.find(e => e.node == endId);
         const edgeOffset = path.offset / 2;
         dist -= edgeOffset;
 
         // handle self edge text
         if (startId === endId) {
-            const angleVector = getVectorFromAngle(path.angle);
+            const angleVector = vector.getVectorFromAngle(path.angle);
             const basePosition = {x: startNode.coords.x + angleVector.x * DISTANCE.selfEdgeText, y: startNode.coords.y + angleVector.y * DISTANCE.selfEdgeText };
-            const normalAngle = getNormalVector(startNode.coords, basePosition);
+            const normalAngle = vector.getNormalVector(startNode.coords, basePosition);
 
-            dot = getDotProduct({ x: coord.x - basePosition.x, y: coord.y - basePosition.y }, normalAngle);
-            length = getLength(normalAngle);
+            dot = vector.getDotProduct({ x: coord.x - basePosition.x, y: coord.y - basePosition.y }, normalAngle);
+            length = vector.getLength(normalAngle);
             dist = -dot / length;
             path.textOffset = dist;
 
@@ -1238,7 +1239,7 @@ function makeDraggable(evt) {
         const nodeId = ids.split("-")[0];
         const node = graph[nodeId];
 
-        let angle = getAngle360Degree(node.coords, coord);
+        let angle = vector.getAngle360Degree(node.coords, coord);
         if (ACTION.showGrid) {
             angle = getClosestStep(angle, 360, THRESHOLDS.angle);
         }
@@ -1268,14 +1269,14 @@ function makeDraggable(evt) {
         // get the coords of the nodes
         const startNode = graph[startId];
         const endNode = graph[endId];
-        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
+        const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
 
-        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+        const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
 
         // determine distance to mouse 
         const directionVector = { x: endNode.coords.x - startNode.coords.x, y: endNode.coords.y - startNode.coords.y };
-        const dot = getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
-        const length = getLength(directionVector);
+        const dot = vector.getDotProduct({ x: coord.x - startNode.coords.x, y: coord.y - startNode.coords.y }, directionVector);
+        const length = vector.getLength(directionVector);
         let dist = -2 * dot / length;
         if (dist < THRESHOLDS.straightEdge && dist > -THRESHOLDS.straightEdge) {
             dist = 0;
@@ -1307,14 +1308,14 @@ function makeDraggable(evt) {
         const id = parseInt(ACTION.selectedDragElement.id.split("_")[1]);
         const node = graph[id];
 
-        let angle = getAngle360Degree(node.coords, coord);
+        let angle = vector.getAngle360Degree(node.coords, coord);
         if (ACTION.showGrid) {
             angle = getClosestStep(angle, 360, THRESHOLDS.angle);
         }
         node.startAngle = angle;
 
         // adapt the line
-        const startAngle = getVectorFromAngle(angle);
+        const startAngle = vector.getVectorFromAngle(angle);
         const length = SIZE.nodeRadius + DISTANCE.startEdge;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
@@ -1363,7 +1364,7 @@ function makeDraggable(evt) {
             const selector = `${CONSTANTS.start}_${id}`;
             const pathContainer = document.getElementById(selector);
 
-            const startAngle = getVectorFromAngle(node.startAngle);
+            const startAngle = vector.getVectorFromAngle(node.startAngle);
             const length = SIZE.nodeRadius + DISTANCE.startEdge;
             const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
 
@@ -1453,8 +1454,8 @@ function correctEdges(pathList, id, to) {
         const startNode = graph[to ? id : nodeId];
         const endNode = graph[to ? nodeId : id];
 
-        const middle = getMiddleOfVector(startNode.coords, endNode.coords);
-        const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+        const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
+        const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
         const otherNode = startNode.to.find(e => e.node == (to ? nodeId : id));
         const dist = otherNode.offset;
 
@@ -1468,7 +1469,7 @@ function correctEdges(pathList, id, to) {
 
             // redraw the label
             if (child.tagName == CONSTANTS.text) {
-                const normalVector = getUnitVector(getNormalVector(startNode.coords, endNode.coords));
+                const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
                 child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
                 child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
             }
@@ -1479,80 +1480,11 @@ function correctEdges(pathList, id, to) {
 function correctSelfEdgeText(elem, id) {
     const node = graph[id];
     const path = node.to.find(e => e.node == id);
-    const angleVector = getVectorFromAngle(path.angle);
+    const angleVector = vector.getVectorFromAngle(path.angle);
     const dist = path.textOffset;
 
     elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
     elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist));
-}
-
-/* ========================================== Vector methods ========================================== */
-
-function getLength(vector) {
-    return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2));
-}
-
-function getDistance(vectorA, vectorB) {
-    return Math.sqrt(Math.pow(vectorB.x - vectorA.x, 2) + Math.pow(vectorB.y - vectorA.y, 2));
-}
-
-function getDotProduct(vectorA, vectorB) {
-    return vectorA.x * vectorB.y - vectorB.x * vectorA.y;
-}
-function getNormalVector(vectorA, vectorB) {
-    return {
-        x: -(vectorB.y - vectorA.y),
-        y: vectorB.x - vectorA.x
-    }
-}
-
-function getUnitVector(vector) {
-    const length = getLength(vector);
-    return {
-        x: vector.x / length,
-        y: vector.y / length,
-    }
-}
-
-function getMiddleOfVector(vectorA, vectorB) {
-    return {
-        x: (vectorA.x + vectorB.x) / 2,
-        y: (vectorA.y + vectorB.y) / 2
-    }
-}
-
-function getVectorAngle(vectorA, vectorB) {
-    const dot = getDotProduct(vectorA, vectorB);
-    const lengthA = getLength(vectorA);
-    const lengthB = getLength(vectorB);
-
-    return Math.acos(dot / (lengthA * lengthB));
-}
-
-function getAngle360Degree(baseVector, position) {
-    const vector = { x: position.x - baseVector.x, y: position.y - baseVector.y };
-    const angle = getVectorAngle(vector, { x: 1, y: 0 });
-    let angleDegree = angle * (180 / Math.PI);
-    const dot = getDotProduct(vector, { x: 0, y: 1 });
-
-    // correct the left side of the circle
-    if (dot < 0) {
-        angleDegree = (360 - angleDegree);
-    }
-
-    return angleDegree;
-}
-
-function getVectorFromAngle(angle) {
-    const angleBase = { x: 0, y: -1 };
-
-    const radiantAngle = (360 - angle) * (Math.PI / 180);
-    const vector = {
-        x: angleBase.x * Math.cos(radiantAngle) + angleBase.y * Math.sin(radiantAngle),
-        y: angleBase.y * Math.cos(radiantAngle) - angleBase.x * Math.sin(radiantAngle)
-    }
-
-    return getUnitVector(vector);
 }
 
 function downloadSVG(downloadLink) {
@@ -1565,10 +1497,6 @@ function downloadSVG(downloadLink) {
 
     downloadLink.href = svgUrl;
     downloadLink.download = "automaton.svg";
-}
-
-function getKeyByValue(object, value) {
-    return Object.keys(object).find(key => object[key] === value);
 }
 
 function getEdgesFromNode(id) {
@@ -1597,6 +1525,7 @@ function removeEdgesToNode(id) {
 }
 
 function getClosestStep(val, end, step) {
+    // TODO: Use mod for this?
     const negative = val < 0;
     val = Math.abs(val);
     let dist = Number.MAX_VALUE;
