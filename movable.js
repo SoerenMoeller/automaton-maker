@@ -1,4 +1,5 @@
 import { convertToLaTeX } from './converter.js';
+import { Graph } from './model.js';
 import * as vector from './vectors.js';
 
 document.addEventListener("DOMContentLoaded", main);
@@ -74,7 +75,6 @@ const CONSTANTS = {
 }
 
 // used to give every element an unique id
-let highestId = 0;
 let graph = {
     0: {
         desc: "q_0",
@@ -225,6 +225,7 @@ let graph = {
     },
 };
 let svg;
+const model = new Graph(graph);
 
 function main() {
     // find the svg to draw in
@@ -538,22 +539,12 @@ function toggleStartNode(changeView) {
 }
 
 function addNode() {
-    let node = {
-        desc: "",
-        attributes: [],
-        coords: {
-            x: 10,
-            y: 10
-        },
-        to: []
-    }
-
-    graph[highestId++] = node;
+    const id = model.addNode();
 
     buildSVG();
 
     // highlight the node after builing it
-    selectNodeById(highestId - 1);
+    selectNodeById(id);
 }
 
 function selectNodeById(nodeId) {
@@ -602,8 +593,7 @@ function removePath() {
     const ids = getIdsOfPath(ACTION.selectedElement);
 
     // remove edge from logic
-    let to = graph[ids.from].to;
-    graph[ids.from].to = to.filter(e => e.node != ids.to);
+    model.removeEdge(ids.from, ids.to);
 
     // remove from view
     ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
@@ -614,20 +604,13 @@ function removeNode() {
     const nodeId = getIdOfNode(ACTION.selectedElement);
 
     // fetch edges related to the node
-    let edgeFrom = getEdgesFromNode(nodeId);
-    const edgeTo = getEdgesToNode(nodeId);
+    const edges = model.getEdgesInvolvingNode(nodeId);
+    edges.from = edges.from.filter(e => e != nodeId);
 
-    // remove self path from one of the to avoid double deleting it
-    edgeFrom = edgeFrom.filter(e => e != nodeId);
+    model.removeNode(nodeId);
 
-    removePathFromView(edgeFrom, nodeId, true);
-    removePathFromView(edgeTo, nodeId, false);
-
-    // remove edges from logic
-    removeEdgesToNode(nodeId);
-
-    // remove node from logic
-    delete graph[nodeId];
+    removePathFromView(edges.from, nodeId, true);
+    removePathFromView(edges.to, nodeId, false);
 
     // remove from view
     ACTION.selectedElement.parentNode.removeChild(ACTION.selectedElement);
@@ -1032,31 +1015,14 @@ function startDrawing(nodeId) {
 function endDrawing(event) {
     // mount the path if on another node (or else throw it away)
     const coord = getMousePosition(event);
-    const node = graph[ACTION.drawStartNodeId];
 
     for (let nodeId in graph) {
         // check if distance is low enough
-        if (vector.getDistance(coord, graph[nodeId].coords) > SIZE.nodeRadius) continue;
+        if (vector.getDistance(coord, model.getCoords(nodeId)) > SIZE.nodeRadius) continue;
 
-        // check if there is no existing edge yet
-        const existentEdge = node.to.find(e => e.node == nodeId);
-        if (existentEdge) continue;
+        const succ = model.addEdge(ACTION.drawStartNodeId, nodeId);
+        if (succ === -1) continue;
 
-        const newEdge = {
-            node: parseInt(nodeId),
-            desc: "",
-            textOffset: -2
-        }
-
-        // check if self edge or normal edge
-        if (ACTION.drawStartNodeId === nodeId) {
-            newEdge.angle = 0;
-        } else {
-            newEdge.offset = 0;
-        }
-
-        // add the edge to the logic
-        node.to.push(newEdge);
         buildSVG();
 
         // highlight the edge
@@ -1497,31 +1463,6 @@ function downloadSVG(downloadLink) {
 
     downloadLink.href = svgUrl;
     downloadLink.download = "automaton.svg";
-}
-
-function getEdgesFromNode(id) {
-    return graph[id].to.map(e => e.node);
-}
-
-function getEdgesToNode(id) {
-    const edges = [];
-    for (let nodeId in graph) {
-        let to = graph[nodeId].to;
-        for (let otherNode in to) {
-            let otherId = to[otherNode].node;
-            if (otherId == id) {
-                edges.push(parseInt(nodeId));
-            }
-        }
-    }
-
-    return edges;
-}
-
-function removeEdgesToNode(id) {
-    for (let nodeId in graph) {
-        graph[nodeId].to = graph[nodeId].to.filter(e => e.node != id)
-    }
 }
 
 function getClosestStep(val, end, step) {
