@@ -1,5 +1,6 @@
 import { convertToLaTeX } from './converter.js';
 import { Graph } from './model.js';
+import * as view from './view.hs'
 import * as vector from './vectors.js';
 
 document.addEventListener("DOMContentLoaded", main);
