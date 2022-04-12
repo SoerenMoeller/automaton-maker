@@ -25,6 +25,11 @@
       <div id="actionContainer">
         <a id="downloadButton">Download</a>
         <button id="convertButton">Convert</button>
+        <select id="selectedSize" name="selectedSize">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="big">Big</option>
+        </select>
       </div>
       <div id="resetContainer">
         <p>Reset</p>
@@ -32,5 +37,14 @@
       </div>
     </div>
   </main>
+  <div id="overlay">
+    <div>
+      <div id="copy-header">
+        <h3>LaTeX Code:</h3>
+        <button id="copyButton">Copy</button>
+      </div>
+      <p id="copy-container"></p>
+    </div>
+  </div>
 </body>
 </html>

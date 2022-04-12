@@ -10,7 +10,8 @@ export function convertToLaTeX(graph) {
     output += convertEdges(graph);
 
     output += "\n\\end{tikzpicture}";
-    console.log(output);
+
+    return output;
 }
 
 function getTikzHeader() {

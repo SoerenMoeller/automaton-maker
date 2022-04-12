@@ -9,6 +9,7 @@ In general, NFAs, DFAs and TMs should be supported.
 - Snapping of text in grid mode
 - Multiple size options
 - View to copy LaTeX from
+- Multi select elements
 
 ## Bugs
 - Arrow offset
@@ -28,4 +29,3 @@ In general, NFAs, DFAs and TMs should be supported.
 - Esc: Unselect
 - Drag: Drag nodes, change curve of edge or rearrange position of start/self-edges, drag text offset from edges
 - Shift: Activate grid view for precise positioning
-

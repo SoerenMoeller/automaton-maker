@@ -233,10 +233,6 @@ function main() {
     // init the svg
     buildSVG();
 
-    // fix reset width
-    const resetImg = document.getElementsByTagName("img")[0];
-    resetImg.style.width = resetImg.height + "px";
-
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 
@@ -244,10 +240,80 @@ function main() {
     const downloadButton = document.getElementsByTagName("a")[0];
     const addButton = document.getElementById("addButton");
     const convertButton = document.getElementById("convertButton");
+    const copyButton = document.getElementById("copyButton");
+    const overlay = document.getElementById("overlay");
+    const sizeSelection = document.getElementById("selectedSize");
+
     resetButton.addEventListener("click", e => resetAll());
     downloadButton.addEventListener("click", e => downloadSVG(downloadButton));
     addButton.addEventListener("click", e => addNode());
-    convertButton.addEventListener("click", e => convertToLaTeX(graph));
+    convertButton.addEventListener("click", convert);
+    copyButton.addEventListener("click", e => copyText());
+    overlay.addEventListener("click", resetCopyView);
+    sizeSelection.addEventListener("change", changeSize);
+}
+
+function changeSize(event) {
+    const sizeSelection = event.target;
+    const value = sizeSelection.value;
+   
+    switch (value) {
+        case "small":
+            SIZE.grid = 3;
+            SIZE.nodeRadius = 3;
+            SIZE.text = 1.5;
+            SIZE.subText = 1;
+            DISTANCE.selfEdgeText = 11;
+            DISTANCE.startEdge = 5;
+            break;
+        case "medium":
+            SIZE.grid = 4;
+            SIZE.nodeRadius = 4;
+            SIZE.text = 2.5;
+            SIZE.subText = 1.5;
+            DISTANCE.selfEdgeText = 13;
+            DISTANCE.startEdge = 7;
+            break;
+        case "big":
+            SIZE.grid = 6;
+            SIZE.nodeRadius = 6;
+            SIZE.text = 3.5;
+            SIZE.subText = 2;
+            DISTANCE.selfEdgeText = 16;
+            DISTANCE.startEdge = 10;
+            break;
+        default:
+            console.error("Unkown size selected");
+    }
+
+    buildSVG();
+}
+
+function resetCopyView(event) {
+    if (!event.target.id || event.target.id !== "overlay") return;
+
+    const textContainer = document.getElementById("copy-container");
+    const overlay = document.getElementById("overlay");
+
+    textContainer.textContent = "";
+    overlay.style.display = "none";
+}
+
+async function copyText() {
+    const textContainer = document.getElementById("copy-container");
+
+    await navigator.clipboard.writeText(textContainer.textContent).then(() => {}, (err) => console.error('Async: Could not copy text: ', err));
+}
+
+function convert(event) {
+    const textContainer = document.getElementById("copy-container");
+    const overlay = document.getElementById("overlay");
+
+    // make overlay visible
+    overlay.style.display = "flex";
+
+    const tex = convertToLaTeX(graph);
+    textContainer.textContent = tex;
 }
 
 function resetAll() {
