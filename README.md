@@ -7,8 +7,6 @@ In general, NFAs, DFAs and TMs should be supported.
 - Labels on nodes
 - Multiple lines on edge labels
 - Snapping of text in grid mode
-- Multiple size options
-- View to copy LaTeX from
 - Multi select elements
 
 ## Bugs
