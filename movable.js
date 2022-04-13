@@ -232,9 +232,6 @@ function main() {
     svg = view.init(model.getGraph());
     svg.addEventListener("load", makeDraggable);
 
-    // init the svg
-    buildSVG();
-
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 
@@ -288,23 +285,19 @@ function changeSize(event) {
             console.error("Unkown size selected");
     }
 
-    buildSVG();
-}
-
-function resetCopyView(event) {
-    if (!event.target.id || event.target.id !== "overlay") return;
-
-    const textContainer = document.getElementById("copy-container");
-    const overlay = document.getElementById("overlay");
-
-    textContainer.textContent = "";
-    overlay.style.display = "none";
+    view.build();
 }
 
 async function copyText() {
     const textContainer = document.getElementById("copy-container");
 
     await navigator.clipboard.writeText(textContainer.textContent).then(() => {}, (err) => console.error('Async: Could not copy text: ', err));
+}
+
+function resetCopyView(event) {
+    if (!event.target.id || event.target.id !== "overlay") return;
+
+    view.resetCopyView();
 }
 
 function convert(event) {
@@ -320,9 +313,10 @@ function convert(event) {
 
 function resetAll() {
     ACTION.showGrid = false;
+
     unselectAll();
-    graph = {};
-    resetSVG();
+    model.reset();
+    view.reset();
 }
 
 function handleKeyUpEvent(event) {
@@ -332,7 +326,7 @@ function handleKeyUpEvent(event) {
 function handleKeyEvent(event) {
     if (!event.code) return;
 
-    if (ACTION.typing && event.code != "Escape") return;
+    if (ACTION.typing && (event.code != "Escape" || event.code != "ShiftRight" || event.code != "ShiftLeft")) return;
 
     switch (event.code) {
         case "KeyA":
@@ -365,88 +359,46 @@ function handleKeyEvent(event) {
     }
 }
 
-function toggleGridView() {
-    ACTION.showGrid = !ACTION.showGrid;
-    const gridContainer = document.getElementById("gridContainer");
-    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
-    
-    for (let child of gridContainer.childNodes) {
-        child.setAttributeNS(null, CONSTANTS.stroke, color);
-    }
-}
-
 function showEdgeConfiguration(ids) {
-    const container = resetConfigurationView();
+    const path = model.getEdge(...ids);
+    const data = path.desc;
 
-    // create the elements
-    const removeButton = createRemoveButton(container, "remove");
-    const textDescriptionContainer = createDescriptionContainer(container);
-    const textDescription = textDescriptionContainer.childNodes[1];
-    
-    // fill with existing data
-    const node = graph[ids.from];
-    const path = node.to.find(e => e.node == ids.to);
-    textDescription.value = path.desc;
+    const elements = view.showEdgeConfiguration();
+    elements.textDescription.value = data;
 
     // add events for change 
-    removeButton.addEventListener("click", evt => removeElement());
-    textDescription.addEventListener("focusin", evt => ACTION.typing = true);
-    textDescription.addEventListener("focusout", evt => ACTION.typing = false);
-    textDescription.addEventListener("input", evt => {
+    elements.removeButton.addEventListener("click", evt => removeElement());
+    elements.textDescription.addEventListener("focusin", evt => ACTION.typing = true);
+    elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    elements.textDescription.addEventListener("input", evt => {
         evt.preventDefault();
-        path.desc = textDescription.value;
+        model.setEdgeDescription(...ids, textDescription.value);
 
-        buildSVG();
+        view.build();
     });
 }
 
 function showNodeConfiguration(nodeId) {
-    const container = resetConfigurationView();
-
-    // create the elements
-    const removeButton = createRemoveButton(container, "remove");
-    const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
-    const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
-    const textDescriptionContainer = createDescriptionContainer(container);
-
-    const checkBoxEnd = checkBoxEndContainer.childNodes[1];
-    const checkBoxStart = checkBoxStartContainer.childNodes[1];
-    const textDescription = textDescriptionContainer.childNodes[1];
+    const elements = view.showNodeConfiguration();
 
     // fill with existing data
-    const node = graph[nodeId];
-    checkBoxEnd.checked = node.attributes.includes(CONSTANTS.end);
-    checkBoxStart.checked = node.attributes.includes(CONSTANTS.start);
-    textDescription.value = node.desc;
+    elements.checkBoxEnd.checked = model.isNodeEnd(nodeId);
+    elements.checkBoxStart.checked = model.isNodeStart(nodeId);
+    elements.textDescription.value = model.getNodeDescription(nodeId);
 
     // add events for change 
-    removeButton.addEventListener("click", evt => removeElement());
-    checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
-    checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
-    textDescription.addEventListener("focusin", evt => ACTION.typing = true);
-    textDescription.addEventListener("focusout", evt => ACTION.typing = false);
-    textDescription.addEventListener("input", evt => {
+    elements.removeButton.addEventListener("click", evt => removeElement());
+    elements.checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
+    elements.checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
+    elements.textDescription.addEventListener("focusin", evt => ACTION.typing = true);
+    elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    elements.textDescription.addEventListener("input", evt => {
         evt.preventDefault();
-        const nodeId = getIdOfNode(ACTION.selectedElement);
-        const node = graph[nodeId];
 
-        node.desc = textDescription.value;
-        buildSVG();
+        const nodeId = view.getIdOfNode(ACTION.selectedElement);
+        model.setNodeDecription(nodeId, elements.textDescription.value);
+        view.build();
     });
-}
-
-function createRemoveButton(parent, text) {
-    const button = createDOMElement(parent, "button", { id: "removeButton" });
-    button.innerText = text;
-
-    return button;
-}
-
-function resetConfigurationView() {
-    const container = document.getElementsByClassName("flow-right")[0];
-    container.innerHTML = "";
-
-    return container;
 }
 
 function createDOMElement(parent, name, attributes = {}) {
@@ -458,22 +410,6 @@ function createDOMElement(parent, name, attributes = {}) {
 
     parent.appendChild(element);
     return element
-}
-
-function createInputForm(parent, type, id) {
-    return createDOMElement(parent, "input", {
-        type: type,
-        id: id,
-        name: id
-    });
-}
-
-function createDescriptionContainer(parent) {
-    const container = createContainerWithText(parent, "Description");
-
-    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
-
-    return container;
 }
 
 function createCheckBoxContainer(parent, text) {
@@ -541,25 +477,16 @@ function toggleStartNode(changeView) {
 function addNode() {
     const id = model.addNode();
 
-    buildSVG();
+    view.build();
 
     // highlight the node after builing it
     selectNodeById(id);
 }
 
 function selectNodeById(nodeId) {
-    const nodeElem = getNodeElemById(nodeId);
+    const nodeElem = view.getNodeElemById(nodeId);
 
     selectNode(nodeElem);
-}
-
-function getNodeElemById(nodeId) {
-    const selector = `${CONSTANTS.node}_${nodeId}`;
-    const nodeElem = document.getElementById(selector);
-
-    console.assert(nodeElem, "Couldn't find node");
-
-    return nodeElem;
 }
 
 function getPathElemByIds(fromId, toId) {
@@ -632,130 +559,8 @@ function unselectAll() {
     ACTION.selectedElement = null;
     ACTION.typing = false;
 
-    resetConfigurationView();
-
-    // unmark all nodes
-    for (let nodeId in graph) {
-        setNodeColor(nodeId);
-    }
-
-    for (let fromId in graph) {
-        for (let toId in graph) {
-            setPathColor(fromId, toId);
-        }
-    }
-}
-
-/* ========================================== Building svg methods ========================================== */
-function buildSVG() {
-    resetSVG();
-
-    // render the lines first
-    for (let node in graph) {
-        buildEdges(node);
-    }
-
-    // now render the nodes
-    for (let node in graph) {
-        buildNode(node);
-    }
-
-    reselect();
-}
-
-function createTextNode(parent, position, text, draggable) {
-    const parsedText = parseText(text);
-
-    let configuration = {
-        x: position.x,
-        y: position.y,
-        text_anchor: "middle",
-        alignment_baseline: "central"
-    };
-    if (draggable) {
-        configuration.class = CONSTANTS.draggable;
-    }
-
-    const textNode = createSVGElement(CONSTANTS.text, configuration);
-    textNode.innerHTML = parsedText.text;
-
-    if (parsedText.sub != "") {
-        const subTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.sub,
-            dy: "0.5"
-        });
-        subTextNode.innerHTML = parsedText.sub;
-        textNode.appendChild(subTextNode);
-    }
-
-    if (parsedText.super != "") {
-        // shift back the super text on top of the sub text
-        const backShift = -parsedText.sub.length * (SIZE.subText / 2);
-        const superTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.super,
-            dx: backShift,
-            dy: "0"
-        });
-        superTextNode.innerHTML = parsedText.super;
-        textNode.appendChild(superTextNode);
-    }
-
-    parent.appendChild(textNode);
-    return textNode;
-}
-
-function parseText(input) {
-    let result = {
-        text: "",
-        sub: "",
-        super: ""
-    };
-
-    const subSplit = input.split("_");
-    const superSplit = input.split("^");
-
-    if (subSplit.length === 1 && superSplit.length === 1) {
-        result.text = subSplit[0];
-    } else if (subSplit.length !== 1 && superSplit.length === 1) {
-        result.text = subSplit[0];
-        result.sub = subSplit[1];
-    } else if (subSplit.length === 1 && superSplit.length !== 1) {
-        result.text = superSplit[0];
-        result.super = superSplit[1];
-    } else {
-        result.text = subSplit[0];
-        result.sub = subSplit[1].split("^")[0];
-        result.super = superSplit[1];
-    }
-
-    return result;
-}
-
-function setNodeColor(nodeId, color = COLOR.black) {
-    const selector = `${CONSTANTS.node}_${nodeId}`;
-    const node = document.getElementById(selector);
-
-    for (let child of node.childNodes) {
-        if (child.tagName == CONSTANTS.circle) {
-            child.setAttributeNS(null, "stroke", color);
-        }
-    }
-}
-
-function setPathColor(fromId, toId, color=COLOR.black) {
-    const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
-    const node = document.getElementById(selector);
-
-    if (!node) return;
-    
-    let marker = (color == COLOR.black) ? CONSTANTS.arrow : CONSTANTS.arrowSelected;
-    if (fromId === toId) {
-        marker = (color == COLOR.black) ? CONSTANTS.selfarrow : CONSTANTS.selfarrowSelected;
-    }
-
-    // the first child is transparent
-    node.childNodes[1].setAttributeNS(null, CONSTANTS.stroke, color);
-    node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${marker}`);
+    view.resetConfigurationView();
+    view.unmarkAll(model.getGraph());
 }
 
 function selectEdge(elem) {
@@ -766,7 +571,7 @@ function selectEdge(elem) {
 
     // mark selected node
     const ids = getIdsOfPath(elem);
-    setPathColor(ids.from, ids.to, COLOR.marked);
+    view.setPathColor(ids.from, ids.to, COLOR.marked);
 
     showEdgeConfiguration(ids);
 }
@@ -787,26 +592,6 @@ function selectNode(elem) {
 
     // show view elements
     showNodeConfiguration(nodeId);
-}
-
-function reselect() {
-    // this is needed because currently, everything gets redrawn
-    if (!ACTION.selectedElement) return;
-
-    switch (getIdPrefix(ACTION.selectedElement)) {
-        case CONSTANTS.node:
-            const nodeId = getIdOfNode(ACTION.selectedElement);
-            ACTION.selectedElement = getNodeElemById(nodeId);
-            setNodeColor(nodeId, COLOR.marked);
-            break;
-        case CONSTANTS.path:
-            const ids = getIdsOfPath(ACTION.selectedElement);
-            ACTION.selectedElement = getPathElemByIds(ids.from, ids.to);
-            setPathColor(ids.from, ids.to, COLOR.marked);
-            break;
-        default:
-            console.error("Trying to reconstruct unknown element");
-    }
 }
 
 function startDrawing(nodeId) {
@@ -841,19 +626,6 @@ function endDrawing(event) {
 
     ACTION.draw = false;
     ACTION.drawStartNodeId = -1;
-}
-
-function getIdPrefix(elem) {
-    return elem.id.split("_")[0];
-}
-
-function getIdOfNode(node) {
-    return node.id.split("_")[1];
-}
-
-function getIdsOfPath(path) {
-    const ids = path.id.split("_")[1].split("-");
-    return { from: ids[0], to: ids[1] };
 }
 
 /* ========================================== Dragging logic ========================================== */

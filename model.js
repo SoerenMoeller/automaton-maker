@@ -1,6 +1,11 @@
 let graph = {};
 let count = 0;
 
+export function reset() {
+    graph = {};
+    count = 0;
+}
+
 export function setGraph(newGraph) {
     graph = newGraph;
 }
@@ -14,7 +19,7 @@ export function getNode(id) {
 }
 
 export function getCoords(id) {
-    return this.getNode(id).coords;
+    return getNode(id).coords;
 }
 
 export function addNode() {
@@ -55,13 +60,13 @@ export function addEdge(fromId, toId) {
 }
 
 export function removeNode(id) {
-    this._removeEdges(id);
+    removeEdges(id);
     delete graph[id];
 }
 
 function removeEdges(id) {
     for (let nodeId in graph) {
-        graph[nodeId].to = graph[nodeId].to.filter(e => e.node != id);
+        removeEdge(nodeId, id);
     }
 }
 
@@ -76,10 +81,41 @@ export function getEdgesInvolvingNode(id) {
         edges.concat(to.filter(e => to[e].node == id));
     }
 
+    // avoid having self edges in both
     const edgesFrom = graph[id].to.map(e => e.node);
 
     return {
         to: edgesTo,
         from: edgesFrom
     };
+}
+
+export function getEdge(fromId, toId) {
+    const node = graph[fromId];
+    const path = node.to.find(e => e.node == toId);
+
+    return path;
+}
+
+export function setEdgeDescription(fromId, toId, data) {
+    const path = getEdge(fromId, toId);
+    path.desc = data;
+}
+
+export function getNodeDescription(nodeId) {
+    const node = getNode(nodeId);
+
+    return node.desc; 
+}
+
+export function isNodeEnd(nodeId) {
+    return getNode(nodeId).attributes.includes(CONSTANTS.end);
+}
+
+export function isNodeStart(nodeId) {
+    return getNode(nodeId).attributes.includes(CONSTANTS.start);
+}
+
+export function setNodeDecription(nodeId, data) {
+    getNode(nodeId).desc = data;
 }

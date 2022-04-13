@@ -11,7 +11,7 @@ export function init(graph) {
     return svg;
 }
 
-function build(graph) {
+export function build(graph) {
     reset();
 
     // render the lines first
@@ -54,7 +54,7 @@ function buildNode(graph, id) {
     builder.createTextNode(container, node.coords, node.desc, true);
 }
 
-function reset() {
+export function reset() {
     svg.innerHTML = "";
 
     // make the arrowheads
@@ -131,7 +131,7 @@ function buildEdges(graph, id) {
                 x: middle.x + normalVector.x * (dist / 2 + offset),
                 y: middle.y + normalVector.y * (dist / 2 + offset)
             }
-            createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
+            builder.createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
         } else {
             const path = node.to.find(e => e.node == id);
             const angleVector = vector.getVectorFromAngle(path.angle);
@@ -140,48 +140,171 @@ function buildEdges(graph, id) {
                 x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - path.textOffset),
                 y: node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - path.textOffset)
             }
-            createTextNode(pathContainer, textCoords, path.desc, true);
+            builder.createTextNode(pathContainer, textCoords, path.desc, true);
         }
     }
 }
 
-function createTextNode(parent, position, text, draggable) {
-    const parsedText = parseText(text);
+function setNodeColor(nodeId, color = COLOR.black) {
+    const selector = `${CONSTANTS.node}_${nodeId}`;
+    const node = document.getElementById(selector);
 
-    let configuration = {
-        x: position.x,
-        y: position.y,
-        text_anchor: "middle",
-        alignment_baseline: "central"
-    };
-    if (draggable) {
-        configuration.class = CONSTANTS.draggable;
+    for (let child of node.childNodes) {
+        if (child.tagName == CONSTANTS.circle) {
+            child.setAttributeNS(null, "stroke", color);
+        }
+    }
+}
+
+function setPathColor(fromId, toId, color=COLOR.black) {
+    const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
+    const node = document.getElementById(selector);
+
+    if (!node) return;
+    
+    let marker = (color == COLOR.black) ? CONSTANTS.arrow : CONSTANTS.arrowSelected;
+    if (fromId === toId) {
+        marker = (color == COLOR.black) ? CONSTANTS.selfarrow : CONSTANTS.selfarrowSelected;
     }
 
-    const textNode = createSVGElement(CONSTANTS.text, configuration);
-    textNode.innerHTML = parsedText.text;
+    // the first child is transparent
+    node.childNodes[1].setAttributeNS(null, CONSTANTS.stroke, color);
+    node.childNodes[1].setAttributeNS(null, CONSTANTS.markerEnd, `url(#${marker}`);
+}
 
-    if (parsedText.sub != "") {
-        const subTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.sub,
-            dy: "0.5"
-        });
-        subTextNode.innerHTML = parsedText.sub;
-        textNode.appendChild(subTextNode);
+function reselect() {
+    // this is needed because currently, everything gets redrawn
+    if (!ACTION.selectedElement) return;
+
+    switch (getIdPrefix(ACTION.selectedElement)) {
+        case CONSTANTS.node:
+            const nodeId = getIdOfNode(ACTION.selectedElement);
+            ACTION.selectedElement = getNodeElemById(nodeId);
+            setNodeColor(nodeId, COLOR.marked);
+            break;
+        case CONSTANTS.path:
+            const ids = getIdsOfPath(ACTION.selectedElement);
+            ACTION.selectedElement = getPathElemByIds(ids.from, ids.to);
+            setPathColor(ids.from, ids.to, COLOR.marked);
+            break;
+        default:
+            console.error("Trying to reconstruct unknown element");
+    }
+}
+
+export function resetCopyView(event) {
+    const textContainer = document.getElementById("copy-container");
+    const overlay = document.getElementById("overlay");
+
+    textContainer.textContent = "";
+    overlay.style.display = "none";
+}
+
+export function unmarkAll(graph) {
+    for (let nodeId in graph) {
+        setNodeColor(nodeId);
     }
 
-    if (parsedText.super != "") {
-        // shift back the super text on top of the sub text
-        const backShift = -parsedText.sub.length * (SIZE.subText / 2);
-        const superTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.super,
-            dx: backShift,
-            dy: "0"
-        });
-        superTextNode.innerHTML = parsedText.super;
-        textNode.appendChild(superTextNode);
+    for (let fromId in graph) {
+        for (let toId in graph) {
+            setPathColor(fromId, toId);
+        }
     }
+}
 
-    parent.appendChild(textNode);
-    return textNode;
+export function resetConfigurationView() {
+    const container = document.getElementsByClassName("flow-right")[0];
+    container.innerHTML = "";
+
+    return container;
+}
+
+export function toggleGridView() {
+    ACTION.showGrid = !ACTION.showGrid;
+    const gridContainer = document.getElementById("gridContainer");
+    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
+    
+    for (let child of gridContainer.childNodes) {
+        child.setAttributeNS(null, CONSTANTS.stroke, color);
+    }
+}
+
+export function getIdPrefix(elem) {
+    return elem.id.split("_")[0];
+}
+
+export function getIdOfNode(node) {
+    return node.id.split("_")[1];
+}
+
+export function getIdsOfPath(path) {
+    const ids = path.id.split("_")[1].split("-");
+    return { from: ids[0], to: ids[1] };
+}
+
+export function showEdgeConfiguration() {
+    const container = resetConfigurationView();
+
+    // create the elements
+    const removeButton = createRemoveButton(container, "remove");
+    const textDescriptionContainer = createDescriptionContainer(container);
+    const textDescription = textDescriptionContainer.childNodes[1];
+
+    return {
+        removeButton: removeButton,
+        textDescription: textDescription
+    }
+}
+
+export function showNodeConfiguration() {
+    const container = resetConfigurationView();
+
+    // create the elements
+    const removeButton = createRemoveButton(container, "remove");
+    const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
+    const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
+    const textDescriptionContainer = createDescriptionContainer(container);
+
+    const checkBoxEnd = checkBoxEndContainer.childNodes[1];
+    const checkBoxStart = checkBoxStartContainer.childNodes[1];
+    const textDescription = textDescriptionContainer.childNodes[1];
+
+    return {
+        removeButton: removeButton,
+        checkBoxEnd: checkBoxEnd,
+        checkBoxStart: checkBoxStart,
+        textDescription: textDescription
+    }
+}
+
+function createRemoveButton(parent, text) {
+    const button = createDOMElement(parent, "button", { id: "removeButton" });
+    button.innerText = text;
+
+    return button;
+}
+
+function createDescriptionContainer(parent) {
+    const container = createContainerWithText(parent, "Description");
+
+    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
+
+    return container;
+}
+
+function createInputForm(parent, type, id) {
+    return createDOMElement(parent, "input", {
+        type: type,
+        id: id,
+        name: id
+    });
+}
+
+export function getNodeElemById(nodeId) {
+    const selector = `${CONSTANTS.node}_${nodeId}`;
+    const nodeElem = document.getElementById(selector);
+
+    console.assert(nodeElem, "Couldn't find node");
+
+    return nodeElem;
 }

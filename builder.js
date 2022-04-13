@@ -1,4 +1,5 @@
 import { SIZE, CONSTANTS, COLOR, DISTANCE, THRESHOLDS } from './movable.js';
+import { parseText } from './converter.js';
 
 // Methods for building svg/dom elements 
 
@@ -84,6 +85,47 @@ export function createStyle(parent, styling) {
     parent.appendChild(style);
     
     return style;
+}
+
+export function createTextNode(parent, position, text, draggable) {
+    const parsedText = parseText(text);
+
+    let configuration = {
+        x: position.x,
+        y: position.y,
+        text_anchor: "middle",
+        alignment_baseline: "central"
+    };
+    if (draggable) {
+        configuration.class = CONSTANTS.draggable;
+    }
+
+    const textNode = createSVGElement(CONSTANTS.text, configuration);
+    textNode.innerHTML = parsedText.text;
+
+    if (parsedText.sub != "") {
+        const subTextNode = createSVGElement(CONSTANTS.tspan, {
+            baseline_shift: CONSTANTS.sub,
+            dy: "0.5"
+        });
+        subTextNode.innerHTML = parsedText.sub;
+        textNode.appendChild(subTextNode);
+    }
+
+    if (parsedText.super != "") {
+        // shift back the super text on top of the sub text
+        const backShift = -parsedText.sub.length * (SIZE.subText / 2);
+        const superTextNode = createSVGElement(CONSTANTS.tspan, {
+            baseline_shift: CONSTANTS.super,
+            dx: backShift,
+            dy: "0"
+        });
+        superTextNode.innerHTML = parsedText.super;
+        textNode.appendChild(superTextNode);
+    }
+
+    parent.appendChild(textNode);
+    return textNode;
 }
 
 function createSVGElement(n, v = {}) {

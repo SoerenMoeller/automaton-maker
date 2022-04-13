@@ -298,3 +298,30 @@ function getDirectionVector(vectorA, vectorB) {
         y: vectorB.y - vectorA.y
     };
 }
+
+export function parseText(input) {
+    let result = {
+        text: "",
+        sub: "",
+        super: ""
+    };
+
+    const subSplit = input.split("_");
+    const superSplit = input.split("^");
+
+    if (subSplit.length === 1 && superSplit.length === 1) {
+        result.text = subSplit[0];
+    } else if (subSplit.length !== 1 && superSplit.length === 1) {
+        result.text = subSplit[0];
+        result.sub = subSplit[1];
+    } else if (subSplit.length === 1 && superSplit.length !== 1) {
+        result.text = superSplit[0];
+        result.super = superSplit[1];
+    } else {
+        result.text = subSplit[0];
+        result.sub = subSplit[1].split("^")[0];
+        result.super = superSplit[1];
+    }
+
+    return result;
+}
