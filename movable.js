@@ -1,28 +1,28 @@
 import { convertToLaTeX } from './converter.js';
-import { Graph } from './model.js';
-import * as view from './view.hs'
+import * as model from './model.js';
+import * as view from './view.js'
 import * as vector from './vectors.js';
 
 document.addEventListener("DOMContentLoaded", main);
 
-const COLOR = {
+export const COLOR = {
     black: "black",
     grid: "rgba(224, 128, 31, 0.3)",
     marked: "#34ebeb",
     transparent: "transparent"
 }
 
-const THRESHOLDS = {
+export const THRESHOLDS = {
     straightEdge: 2,
     angle: 15
 };
 
-const DISTANCE = {
+export const DISTANCE = {
     selfEdgeText: 13,
     startEdge: 7
 };
 
-const SIZE = {
+export const SIZE = {
     text: 2.5,
     subText: 1.5,
     nodeRadius: 4,
@@ -33,7 +33,7 @@ const KEYS = {
     control: false
 }
 
-const ACTION = {
+export const ACTION = {
     draw: false,
     selectedDragElement: null,
     selectedElement: null,
@@ -42,7 +42,7 @@ const ACTION = {
     showGrid: false
 }
 
-const CONSTANTS = {
+export const CONSTANTS = {
     path: "path",
     circle: "circle",
     text: "text",
@@ -75,7 +75,6 @@ const CONSTANTS = {
     central: "central"
 }
 
-// used to give every element an unique id
 let graph = {
     0: {
         desc: "q_0",
@@ -226,11 +225,11 @@ let graph = {
     },
 };
 let svg;
-const model = new Graph(graph);
+model.setGraph(graph);
 
 function main() {
     // find the svg to draw in
-    svg = document.getElementsByTagName("svg")[0];
+    svg = view.init(model.getGraph());
     svg.addEventListener("load", makeDraggable);
 
     // init the svg
@@ -647,120 +646,13 @@ function unselectAll() {
     }
 }
 
-function resetSVG() {
-    const svg = document.getElementsByTagName("svg")[0];
-    svg.innerHTML = "";
-
-    // make the arrowheads
-    const defs = createSVGElement(CONSTANTS.defs);
-    const selfPolygon = "0 13, 11 0, 10 16";
-    const polygon = "0 0, 16 5, 0 10";
-    createMarker(defs, CONSTANTS.arrow, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR.black, polygon);
-    createMarker(defs, CONSTANTS.arrowSelected, 16, 10, 16 + 10 * SIZE.nodeRadius - 1, 5, COLOR.marked, polygon);
-    createMarker(defs, CONSTANTS.selfarrow, 16, 16, 23, -7.5, COLOR.black, selfPolygon);
-    createMarker(defs, CONSTANTS.selfarrowSelected, 16, 16, 23, -7.5, COLOR.marked, selfPolygon);
-    createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, COLOR.marked, polygon);
-    svg.appendChild(defs);
-
-    // style
-    const style = createSVGElement(CONSTANTS.style);
-    style.innerHTML = `text {font: italic ${SIZE.text}px sans-serif; user-select: none;} tspan {font: italic ${SIZE.subText}px sans-serif; user-select: none;}`
-    svg.appendChild(style);
-
-    // add default path for later usage
-    createPath(svg, CONSTANTS.defaultPath, "", 0.1, CONSTANTS.defaultMarker, COLOR.marked);
-
-    // make a grid for visible layout
-    initGrid()
-}
-
-function initGrid() {
-    const container = createContainer(svg, "gridContainer");
-    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
-
-    for (let i = 0; i <= 100; i += SIZE.grid) {
-        const dValueRow = `M0 ${i} L100 ${i}`;
-        createPath(container, "", dValueRow, 0.1, "", color);
-
-        const dValueCol = `M${i} 0 L${i} 100`;
-        createPath(container, "", dValueCol, 0.1, "", color);
-    }
-}
-
-function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {
-    const marker = createSVGElement(CONSTANTS.marker, {
-        id: id,
-        markerWidth: width,
-        markerHeight: height,
-        refX: refX,
-        refY: refY,
-        fill: color,
-        orient: "auto"
-    });
-
-    const polygon = createSVGElement(CONSTANTS.polygon, {
-        points: polygonPoints
-    });
-
-    marker.appendChild(polygon);
-    parent.appendChild(marker);
-}
-
-function createPath(parent, id, dValue, stroke_width, marker, color, draggable=false) {
-    const path = createSVGElement(CONSTANTS.path, {
-        d: dValue,
-        stroke: color,
-        stroke_width: stroke_width,
-        fill: CONSTANTS.none
-    });
-
-    if (marker !== "") {
-        path.setAttributeNS(null, CONSTANTS.markerEnd, `url(#${marker})`);
-    }
-
-    if (id !== "") {
-        path.setAttributeNS(null, CONSTANTS.id, id);
-    }
-
-    if (draggable) {
-        path.setAttributeNS(null, CONSTANTS.class, CONSTANTS.draggable);
-    }
-
-    parent.appendChild(path);
-    return path;
-}
-
-function createCircle(parent, coords, radius) {
-    const circle = createSVGElement(CONSTANTS.circle, {
-        class: CONSTANTS.draggable,
-        cx: coords.x,
-        cy: coords.y,
-        r: radius,
-        stroke: COLOR.black,
-        stroke_width: 0.1,
-        fill: CONSTANTS.white
-    });
-
-    parent.appendChild(circle);
-    return circle;
-}
-
-function createContainer(parent, id) {
-    const container = createSVGElement(CONSTANTS.g, {
-        id: id
-    });
-
-    parent.appendChild(container);
-    return container;
-}
-
 /* ========================================== Building svg methods ========================================== */
 function buildSVG() {
     resetSVG();
 
     // render the lines first
     for (let node in graph) {
-        buildLines(node);
+        buildEdges(node);
     }
 
     // now render the nodes
@@ -769,95 +661,6 @@ function buildSVG() {
     }
 
     reselect();
-}
-
-function buildNode(id) {
-    const node = graph[id];
-    const container = createContainer(svg, `${CONSTANTS.node}_${id}`)
-
-    // create starting arrow
-    if (node.attributes.includes(CONSTANTS.start)) {
-        const startAngle = vector.getVectorFromAngle(node.startAngle);
-        const length = SIZE.nodeRadius + DISTANCE.startEdge;
-        const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
-
-        // make a thick invis line, to be able to click it nicely
-        const startContainer = createContainer(container, `${CONSTANTS.start}_${id}`);
-        createPath(startContainer, "", dValue, 1, "", COLOR.transparent, true);
-        createPath(startContainer, "", dValue, 0.1, CONSTANTS.arrow, COLOR.black, true);
-    }
-
-    // create the circle
-    createCircle(container, node.coords, SIZE.nodeRadius);
-
-    if (node.attributes.includes(CONSTANTS.end)) {
-        createCircle(container, node.coords, SIZE.nodeRadius - 0.3);
-    }
-
-    // create the text
-    createTextNode(container, node.coords, node.desc, true);
-}
-
-function buildLines(id) {
-    let node = graph[id];
-    let coords = node.coords;
-
-    for (let otherNode in node.to) {
-        let nodeId = node.to[otherNode].node;
-        let otherCoords = graph[nodeId].coords;
-
-        const pathContainer = createContainer(svg, `${CONSTANTS.path}_${id}-${nodeId}`);
-
-        // create line
-        const middle = vector.getMiddleOfVector(coords, otherCoords);
-        const normalVector = vector.getNormalVector(coords, otherCoords);
-        const dist = node.to[otherNode].offset;
-        let dValue = `M${coords.x} ${coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${otherCoords.x} ${otherCoords.y}`;
-
-        // self-edge
-        if (id == nodeId) {
-            dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
-        }
-
-        const markerEnd = id != nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
-        const outerPath = createPath(pathContainer, "", dValue, 1, "", COLOR.transparent, true);
-        const innerPath = createPath(pathContainer, "", dValue, 0.1, markerEnd, COLOR.black, true);
-
-        if (id == nodeId) {
-            const path = node.to.find(e => e.node == id);
-            outerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
-            innerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
-        }
-
-        // append the text in the middle of the node
-        if (id != nodeId) {
-            const normalVector = vector.getNormalVector(node.coords, otherCoords);
-            const middle = vector.getMiddleOfVector(node.coords, otherCoords);
-            const offset = node.to.find(e => e.node == nodeId).textOffset;
-            const textCoords = {
-                x: middle.x + normalVector.x * (dist / 2 + offset),
-                y: middle.y + normalVector.y * (dist / 2 + offset)
-            }
-            createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
-        } else {
-            const path = node.to.find(e => e.node == id);
-            const angleVector = vector.getVectorFromAngle(path.angle);
-
-            const textCoords = {
-                x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - path.textOffset),
-                y: node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - path.textOffset)
-            }
-            createTextNode(pathContainer, textCoords, path.desc, true);
-        }
-    }
-}
-
-function createSVGElement(n, v = {}) {
-    n = document.createElementNS("http://www.w3.org/2000/svg", n);
-    for (var p in v) {
-        n.setAttributeNS(null, p.replace("_", "-"), v[p]);
-    }
-    return n
 }
 
 function createTextNode(parent, position, text, draggable) {
