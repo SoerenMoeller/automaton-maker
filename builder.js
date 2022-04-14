@@ -135,3 +135,55 @@ function createSVGElement(n, v = {}) {
     }
     return n
 }
+
+function createDOMElement(parent, name, attributes = {}) {
+    const element = document.createElement(name);
+
+    for (let attr in attributes) {
+        element.setAttribute(attr, attributes[attr]);
+    }
+
+    parent.appendChild(element);
+    return element
+}
+
+function createRemoveButton(parent, text) {
+    const button = createDOMElement(parent, "button", { id: "removeButton" });
+    button.innerText = text;
+
+    return button;
+}
+
+function createDescriptionContainer(parent) {
+    const container = createContainerWithText(parent, "Description");
+
+    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
+
+    return container;
+}
+
+function createCheckBoxContainer(parent, text) {
+    const upperCaseText = text[0].toUpperCase() + text.substring(1)
+    const container = createContainerWithText(parent, upperCaseText);
+
+    createInputForm(container, "checkbox", text + "CheckBox");
+
+    return container;
+}
+
+function createContainerWithText(parent, text) {
+    const container = createDOMElement(parent, "div", { class: "flex-container" });
+
+    const textElement = createDOMElement(container, "p");
+    textElement.innerText = text;
+
+    return container;
+}
+
+function createInputForm(parent, type, id) {
+    return createDOMElement(parent, "input", {
+        type: type,
+        id: id,
+        name: id
+    });
+}

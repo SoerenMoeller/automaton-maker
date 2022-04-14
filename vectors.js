@@ -66,3 +66,17 @@ export function getVectorFromAngle(angle) {
 
     return getUnitVector(vector);
 }
+
+export function getDirectionVector(vectorA, vectorB) {
+    return {
+        x: vectorB.x - vectorA.x,
+        y: vectorB.y - vectorA.y
+    };
+}
+
+export function getDistanceToLine(point, direction, pointOnLine) {
+    const dot = vector.getDotProduct({ x: point.x - pointOnLine.x, y: point.y - pointOnLine.y }, direction);
+    const length = vector.getLength(direction);
+    
+    return -dot / length;
+}

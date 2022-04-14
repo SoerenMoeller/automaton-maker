@@ -1,3 +1,5 @@
+import { CONSTANTS } from "./movable";
+
 let graph = {};
 let count = 0;
 
@@ -118,4 +120,27 @@ export function isNodeStart(nodeId) {
 
 export function setNodeDecription(nodeId, data) {
     getNode(nodeId).desc = data;
+}
+
+export function toggleNodeAttribute(nodeId, attribute) {
+    const node = getNode(nodeId);
+    const isEnd = isNodeEnd(nodeId);
+
+    if (isEnd) {
+        delete node.attributes[node.attributes.indexOf(attribute)];
+
+        if (attribute === CONSTANTS.start) {
+            delete node.startAngle;
+        }
+    } else {
+        node.attributes.push(attribute);
+
+        if (attribute === CONSTANTS.start) {
+            node.startAngle = 270;
+        }
+    }
+}
+
+export function setEdgeAngle(nodeId, angle) {
+    model.getEdge(nodeId, nodeId).angle = angle;
 }

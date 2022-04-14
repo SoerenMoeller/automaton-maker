@@ -292,13 +292,6 @@ function getSelfEdgeTextPosition(nodeId, graph) {
     return position;
 }
 
-function getDirectionVector(vectorA, vectorB) {
-    return {
-        x: vectorB.x - vectorA.x,
-        y: vectorB.y - vectorA.y
-    };
-}
-
 export function parseText(input) {
     let result = {
         text: "",

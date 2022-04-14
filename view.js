@@ -1,6 +1,7 @@
 import * as builder from './builder.js';
 import * as vector from './vectors.js';
 import { SIZE, CONSTANTS, COLOR, DISTANCE, THRESHOLDS, ACTION } from './movable.js';
+import { setEdgeAngle } from './model.js';
 
 let svg;
 
@@ -277,29 +278,6 @@ export function showNodeConfiguration() {
     }
 }
 
-function createRemoveButton(parent, text) {
-    const button = createDOMElement(parent, "button", { id: "removeButton" });
-    button.innerText = text;
-
-    return button;
-}
-
-function createDescriptionContainer(parent) {
-    const container = createContainerWithText(parent, "Description");
-
-    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
-
-    return container;
-}
-
-function createInputForm(parent, type, id) {
-    return createDOMElement(parent, "input", {
-        type: type,
-        id: id,
-        name: id
-    });
-}
-
 export function getNodeElemById(nodeId) {
     const selector = `${CONSTANTS.node}_${nodeId}`;
     const nodeElem = document.getElementById(selector);
@@ -307,4 +285,51 @@ export function getNodeElemById(nodeId) {
     console.assert(nodeElem, "Couldn't find node");
 
     return nodeElem;
+}
+
+export function toggleCheckBox(name) {
+    const checkBox = document.getElementById(name);
+    checkBox.checked = !checkBox.checked;
+
+    // rebuild since the checkboxes change the view
+    build();
+}
+
+function getPathElemByIds(fromId, toId) {
+    const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
+    const nodeElem = document.getElementById(selector);
+
+    console.assert(nodeElem, "Couldn't find path");
+
+    return nodeElem;
+}
+
+export function removeElementFromView(element) {
+    element.parentNode.removeChild(element);
+}
+
+export function removePathFromView(edges, id, to) {
+    for (let nodeId of edges) {
+        const fromId = to ? id : nodeId;
+        const toId = to ? nodeId : id;
+
+        const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
+        const path = document.getElementById(selector);
+
+        path.parentNode.removeChild(path);
+    }
+}
+
+export function resetDrawingPath() {
+    document.getElementById(CONSTANTS.defaultPath).setAttributeNS(null, "d", "");
+}
+
+export function setPathAttribute(name, attribute) {
+    const path = document.getElementById(name);
+
+    path.setAttributeNS(null, "d", attribute);
+}
+
+export function setPathAngle(elem, angle, coords) {
+    elem.setAttributeNS(null, "transform", `rotate(${angle}, ${coords.x}, ${coords.y})`);
 }
