@@ -256,7 +256,7 @@ function main() {
 function changeSize(event) {
     const sizeSelection = event.target;
     const value = sizeSelection.value;
-   
+
     switch (value) {
         case "small":
             SIZE.grid = 3;
@@ -292,7 +292,7 @@ function changeSize(event) {
 async function copyText() {
     const textContainer = document.getElementById("copy-container");
 
-    await navigator.clipboard.writeText(textContainer.textContent).then(() => {}, (err) => console.error('Async: Could not copy text: ', err));
+    await navigator.clipboard.writeText(textContainer.textContent).then(() => { }, (err) => console.error('Async: Could not copy text: ', err));
 }
 
 function resetCopyView(event) {
@@ -355,12 +355,12 @@ function handleKeyEvent(event) {
             toggleEndNode(true);
             break;
         default:
-            // debug only
-            //console.log(event.code);
+        // debug only
+        //console.log(event.code);
     }
 }
 
-function showEdgeConfiguration(ids) {
+function initEdgeConfiguration(ids) {
     const path = model.getEdge(...ids);
     const data = path.desc;
 
@@ -379,7 +379,7 @@ function showEdgeConfiguration(ids) {
     });
 }
 
-function showNodeConfiguration(nodeId) {
+function initNodeConfiguration(nodeId) {
     const elements = view.showNodeConfiguration();
 
     // fill with existing data
@@ -606,11 +606,12 @@ function draw(evt) {
 
     evt.preventDefault();
     const mouse = getMousePosition(evt);
-    
+
     const startCoords = model.getCoords(ACTION.drawStartNodeId);
     const dValue = `M${startCoords.x} ${startCoords.y} L${mouse.x} ${mouse.y}`;
+    const path = document.getElementById(CONSTANTS.defaultPath);
 
-    view.setPathAttribute(CONSTANTS.defaultPath, dValue);
+    view.setPathAttribute(path, dValue);
 }
 
 function drag(evt) {
@@ -658,26 +659,32 @@ function dragText(mouse) {
     // handle self edge text
     if (ids.from === ids.to) {
         const angleVector = vector.getVectorFromAngle(path.angle);
-        const basePosition = {x: startNode.coords.x + angleVector.x * DISTANCE.selfEdgeText, y: startNode.coords.y + angleVector.y * DISTANCE.selfEdgeText };
+        const basePosition = { x: startNode.coords.x + angleVector.x * DISTANCE.selfEdgeText, y: startNode.coords.y + angleVector.y * DISTANCE.selfEdgeText };
         const normalAngle = vector.getNormalVector(startNode.coords, basePosition);
-        
+
         let dist = vector.getDistanceToLine(mouse, normalAngle, basePosition);
         egde.textOffset = dist;
-        
-        ACTION.selectedDragElement.setAttributeNS(null, "x", startNode.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
-        ACTION.selectedDragElement.setAttributeNS(null, "y", startNode.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist));
-        
+
+        const update = {
+            x: startNode.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist),
+            y: startNode.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist)
+        };
+        view.updateAttributes(ACTION.selectedDragElement, update);
+
         return;
-    } 
-    
+    }
+
     // handle normal edge
     const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
     const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
     let dist = vector.getDistanceToLine(mouse, directionVector, startNoce.coords) - edge.offset;
-
     edge.textOffset = dist;
-    ACTION.selectedDragElement.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + edgeOffset));
-    ACTION.selectedDragElement.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + edgeOffset));
+
+    const update = {
+        x: middle.x + normalVector.x * (dist + edgeOffset),
+        y: middle.y + normalVector.y * (dist + edgeOffset)
+    };
+    view.updateAttributes(ACTION.selectedDragElement, update);
 }
 
 function dragSelfEdge(coord) {
@@ -718,140 +725,127 @@ function dragEdge(mouse) {
     const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
     let dist = vector.getDistanceToLine(mouse, directionVector, startNode.coords);
 
-    if (2*dist < THRESHOLDS.straightEdge && 2*dist > -THRESHOLDS.straightEdge) {
+    if (2 * dist < THRESHOLDS.straightEdge && 2 * dist > -THRESHOLDS.straightEdge) {
         dist = 0;
     }
-    if (ACTION.showGrid) {
-        dist = getClosestStep(dist, SIZE.grid);
-    }
+    dist = snap(dist, SIZE.grid);
 
     // update the offset in the data
     const edge = model.getEdge(...ids);
     edge.offset = dist;
     const textOffset = edge.textOffset;
 
-    const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
+    const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * 2 * dist} ${middle.y + normalVector.y * 2 * dist} ${endNode.coords.x} ${endNode.coords.y}`;
+    const update = {
+        x: middle.x + normalVector.x * (dist + textOffset),
+        y: middle.y + normalVector.y * (dist + textOffset)
+    };
     for (let child of ACTION.selectedDragElement.childNodes) {
-        if (child.tagName == CONSTANTS.path) {
-            child.setAttributeNS(null, "d", dValue);
-        }
-
-        if (child.tagName == CONSTANTS.text) {
-            child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
-            child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
+        switch (child.tagName) {
+            case CONSTANTS.path:
+                view.updateAttributes(child, { d: dValue });
+                break;
+            case CONSTANTS.text:
+                view.updateAttributes(child, update);
+                break;
+            default:
+                console.error("Unknown element found");
         }
     }
 }
 
-function dragStartEdge(coord) {
-    // get the id of the node
-    const id = parseInt(ACTION.selectedDragElement.id.split("_")[1]);
-    const node = graph[id];
+function dragStartEdge(mouse) {
+    const id = view.getIdOfNode(ACTION.selectedDragElement);
+    const coords = model.getCoords(id);
 
-    let angle = vector.getAngle360Degree(node.coords, coord);
-    if (ACTION.showGrid) {
-        angle = getClosestStep(angle, 360, THRESHOLDS.angle);
-    }
-    node.startAngle = angle;
+    let angle = vector.getAngle360Degree(coords, mouse);
+    angle = snap(angle, THRESHOLDS.angle);
+
+    model.setStartAngle(angle);
 
     // adapt the line
     const startAngle = vector.getVectorFromAngle(angle);
     const length = SIZE.nodeRadius + DISTANCE.startEdge;
-    const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
+    const dValue = `M${coords.x + startAngle.x * length} ${coords.y + startAngle.y * length} L${coords.x} ${coords.y}`;
 
-    ACTION.selectedDragElement.childNodes[0].setAttributeNS(null, "d", dValue);
-    ACTION.selectedDragElement.childNodes[1].setAttributeNS(null, "d", dValue);
+    view.updateAttributes(ACTION.selectedDragElement.childNodes[0], { d: dValue });
+    view.updateAttributes(ACTION.selectedDragElement.childNodes[1], { d: dValue });
 }
 
-function dragNode(coord) {
-    // get the id of the node
-    const id = parseInt(ACTION.selectedDragElement.id.split("_")[1]);
-    const node = graph[id];
+function dragNode(mouse) {
+    const id = view.getIdOfNode(ACTION.selectedDragElement);
+    const coords = mode.getNode(id);
 
-    if (ACTION.showGrid) {
-        coord.x = getClosestStep(coord.x, 100, SIZE.grid);
-        coord.y = getClosestStep(coord.y, 100, SIZE.grid);
-    }
+    mouse.x = snap(mouse.x, SIZE.grid);
+    mouse.y = snap(mouse.y, SIZE.grid);
 
-    // prevent going over the edge
-    let freezeX = coord.x > 100 - SIZE.nodeRadius || coord.x < SIZE.nodeRadius;
-    let freezeY = coord.y > 100 - SIZE.nodeRadius || coord.y < SIZE.nodeRadius;
-
-    // prevent overlapping nodes
+    // prevent overlapping nodes and going over the edge
     let distance = Number.MAX_VALUE;
-    for (let nodeId in graph) {
+    for (let nodeId in model.getGraph()) {
         if (nodeId == id) continue;
 
-        const tmpDistance = Math.sqrt(Math.pow(coord.x - graph[nodeId].coords.x, 2) + Math.pow(coord.y - graph[nodeId].coords.y, 2));
+        const tmpDistance = vector.getDistance(mouse, coords);
         distance = Math.min(distance, tmpDistance);
     }
-    if (freezeX || distance < 2 * SIZE.nodeRadius) {
-        coord.x = graph[id].coords.x;
+    if (mouse.x > 100 - SIZE.nodeRadius || mouse.x < SIZE.nodeRadius || distance < 2 * SIZE.nodeRadius) {
+        mouse.x = coords.x;
     }
 
-    if (freezeY || distance < 2 * SIZE.nodeRadius) {
-        coord.y = graph[id].coords.y;
+    if (mouse.y > 100 - SIZE.nodeRadius || mouse.y < SIZE.nodeRadius || distance < 2 * SIZE.nodeRadius) {
+        mouse.y = coords.y;
     }
 
     // move the text and the circle
     for (let child of ACTION.selectedDragElement.childNodes) {
-        child.setAttributeNS(null, child.tagName == CONSTANTS.circle ? "cx" : "x", coord.x);
-        child.setAttributeNS(null, child.tagName == CONSTANTS.circle ? "cy" : "y", coord.y);
-    }
-
-    // change the path of start
-    if (graph[id].attributes.includes(CONSTANTS.start)) {
-        const selector = `${CONSTANTS.start}_${id}`;
-        const pathContainer = document.getElementById(selector);
-
-        const startAngle = vector.getVectorFromAngle(node.startAngle);
-        const length = SIZE.nodeRadius + DISTANCE.startEdge;
-        const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
-
-        pathContainer.childNodes[0].setAttributeNS(null, "d", dValue);
-        pathContainer.childNodes[1].setAttributeNS(null, "d", dValue);
-    }
-
-    graph[id].coords = coord;
-    // get all paths from current node
-    const pathTo = [];
-    let paths = graph[id].to;
-    for (let elem in paths) {
-        pathTo.push(parseInt(paths[elem].node));
-    }
-
-    // collect all paths into the current node
-    const pathFrom = [];
-    for (let nodeId in graph) {
-        let to = graph[nodeId].to;
-        for (let otherNode in to) {
-            let otherId = to[otherNode].node;
-            if (otherId == id) {
-                pathFrom.push(parseInt(nodeId));
-            }
+        switch(child.tagName) {
+            case CONSTANTS.circle:
+                view.updateAttributes(child, { cx: mouse.x, cy: mouse.y });
+                break;
+            case CONSTANTS.text:
+                view.updateAttributes(child, { x: mouse.x, y: mouse.y });
+                break;
+            default:
+                console.error("Unknown element found");
         }
     }
 
-    // remove the self edge
-    if (pathTo.includes(id)) {
-        const indexTo = pathTo.indexOf(id);
-        const indexFrom = pathFrom.indexOf(id);
-        pathTo.splice(indexTo, 1);
-        pathFrom.splice(indexFrom, 1);
+    // change the path of start
+    if (model.isNodeStart(id)) {
+        const pathContainer = view.getStartEdge(id);
 
-        const dValue = `M${node.coords.x} ${node.coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${node.coords.x + 0.01} ${node.coords.y - SIZE.nodeRadius + 1}`;
-        const selfPath = node.to.find(e => e.node == id);
+        const startAngle = vector.getVectorFromAngle(node.startAngle);
+        const length = SIZE.nodeRadius + DISTANCE.startEdge;
+        const dValue = `M${coords.x + startAngle.x * length} ${coords.y + startAngle.y * length} L${coords.x} ${coords.y}`;
+
+        view.updateAttributes(pathContainer.childNodes[0], { d: dValue });
+        view.updateAttributes(pathContainer.childNodes[1], { d: dValue });
+    }
+
+    // update the model
+    model.setCoords(id, mouse);
+
+    
+    // remove the self edge
+    const edges = model.getEdgesInvolvingNode(id);
+    if (edges.to.includes(id)) {
+        const index = pathTo.indexOf(id);
+        pathTo.splice(index, 1);
+
+        const dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
+        const selfPath = model.getEdge(id, id);
 
         // get the svg path
-        const selector = `${CONSTANTS.path}_${id}-${id}`;
-        const path = document.getElementById(selector);
+        const path = view.getPathElemByIds(id, id);
 
         // correct the self edge 
+        const update = {
+            d: dValue,
+            transform: `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`
+        };
         for (let child of path.childNodes) {
             switch (child.tagName) {
                 case CONSTANTS.path:
-                    child.setAttributeNS(null, "d", dValue);
-                    child.setAttributeNS(null, "transform", `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`);
+                    view.updateAttributes(child, update);
                     break;
                 case CONSTANTS.text:
                     correctSelfEdgeText(child, id);
@@ -885,20 +879,22 @@ function getMousePosition(evt) {
 
 function correctEdges(pathList, id, to) {
     for (let nodeId of pathList) {
+        const fromId = to ? id : nodeId;
+        const toId = to ? nodeId : id;
+
         // get the svg path
-        const selector = `${CONSTANTS.path}_${to ? id : nodeId}-${to ? nodeId : id}`;
-        const path = document.getElementById(selector);
+        const path = view.getPathElemByIds(fromId, toId);
 
         // redraw the path
-        const startNode = graph[to ? id : nodeId];
-        const endNode = graph[to ? nodeId : id];
+        const startCoords = model.getCoords(fromId);
+        const endCoords = model.getCoords(toId);
 
-        const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
-        const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
-        const otherNode = startNode.to.find(e => e.node == (to ? nodeId : id));
+        const middle = vector.getMiddleOfVector(startCoords, endCoords);
+        const normalVector = vector.getNormalVector(startCoords, endCoords);
+        const otherNode = model.getEdge(fromId, toId);
         const dist = otherNode.offset;
 
-        const dValue = `M${startNode.coords.x} ${startNode.coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${endNode.coords.x} ${endNode.coords.y}`;
+        const dValue = `M${startCoords.x} ${startCoords.y} Q${middle.x + normalVector.x * 2 * dist} ${middle.y + normalVector.y * 2 * dist} ${endCoords.x} ${endCoords.y}`;
         const textOffset = otherNode.textOffset;
 
         for (const child of path.childNodes) {
@@ -908,9 +904,9 @@ function correctEdges(pathList, id, to) {
 
             // redraw the label
             if (child.tagName == CONSTANTS.text) {
-                const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
-                child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist / 2 + textOffset));
-                child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist / 2 + textOffset));
+                const normalVector = vector.getNormalVector(startCoords, endCoords);
+                child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + textOffset));
+                child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + textOffset));
             }
         }
     }
@@ -939,5 +935,7 @@ function downloadSVG(downloadLink) {
 }
 
 function snap(val, step) {
+    if (!ACTION.showGrid) return val;
+
     return Math.round(val / step) * step;
 }

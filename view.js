@@ -235,12 +235,12 @@ export function getIdPrefix(elem) {
 }
 
 export function getIdOfNode(node) {
-    return node.id.split("_")[1];
+    return parseInt(node.id.split("_")[1]);
 }
 
 export function getIdsOfPath(path) {
     const ids = path.id.split("_")[1].split("-");
-    return { from: ids[0], to: ids[1] };
+    return { from: parseInt(ids[0]), to: parseInt(ids[1]) };
 }
 
 export function showEdgeConfiguration() {
@@ -324,12 +324,18 @@ export function resetDrawingPath() {
     document.getElementById(CONSTANTS.defaultPath).setAttributeNS(null, "d", "");
 }
 
-export function setPathAttribute(name, attribute) {
-    const path = document.getElementById(name);
-
-    path.setAttributeNS(null, "d", attribute);
-}
-
 export function setPathAngle(elem, angle, coords) {
     elem.setAttributeNS(null, "transform", `rotate(${angle}, ${coords.x}, ${coords.y})`);
+}
+
+export function updateAttributes(element, attributes) {
+    for (let attr in attributes) {
+        element.setAttributeNS(null, attr, attributes[attr]);
+    }
+}
+
+export function getStartEdge(nodeId) {
+    const selector = `${CONSTANTS.start}_${nodeId}`;
+    
+    return document.getElementById(selector);
 }

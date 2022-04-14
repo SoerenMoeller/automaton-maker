@@ -84,7 +84,7 @@ export function getEdgesInvolvingNode(id) {
     }
 
     // avoid having self edges in both
-    const edgesFrom = graph[id].to.map(e => e.node);
+    const edgesFrom = getNode(id).to.map(e => e.node);
 
     return {
         to: edgesTo,
@@ -143,4 +143,12 @@ export function toggleNodeAttribute(nodeId, attribute) {
 
 export function setEdgeAngle(nodeId, angle) {
     model.getEdge(nodeId, nodeId).angle = angle;
+}
+
+export function setStartAngle(nodeId, angle) {
+    model.getNode(nodeId).startAngle = angle;
+}
+
+export function setCoords(nodeId, coords) {
+    getNode(nodeId).coords = coords;
 }
