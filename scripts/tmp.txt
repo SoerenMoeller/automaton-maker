@@ -1,0 +1,149 @@
+let graph = {
+    0: {
+        desc: "q_0",
+        attributes: ["start"],
+        startAngle: 270,
+        to: [
+            {
+                node: 1,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }
+        ],
+        coords: {
+            x: 10,
+            y: 50
+        }
+    },
+    1: {
+        desc: "q_1^1",
+        attributes: [],
+        to: [
+            {
+                node: 2,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }, {
+                node: 5,
+                desc: "a",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 20,
+            y: 20
+        }
+    },
+    2: {
+        desc: "q_2^1",
+        attributes: [],
+        to: [
+            {
+                node: 3,
+                desc: "a",
+                offset: 0,
+                textOffset: -2
+            }, {
+                node: 6,
+                desc: "b",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 40,
+            y: 20
+        }
+    },
+    3: {
+        desc: "q_3^1",
+        attributes: [],
+        to: [
+            {
+                node: 7,
+                desc: "a",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 60,
+            y: 20
+        }
+    },
+    4: {
+        desc: "q_e",
+        attributes: ["end"],
+        to: [],
+        coords: {
+            x: 70,
+            y: 50
+        }
+    },
+    5: {
+        desc: "q_1^2",
+        attributes: [],
+        to: [
+            {
+                node: 6,
+                desc: "b",
+                offset: 0,
+                textOffset: -2
+            }, {
+                node: 1,
+                desc: "a",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 20,
+            y: 80
+        }
+    },
+    6: {
+        desc: "q_2^2",
+        attributes: [],
+        to: [
+            {
+                node: 7,
+                desc: "b",
+                offset: 0,
+                textOffset: -2
+            }, {
+                node: 2,
+                desc: "b",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 40,
+            y: 80
+        }
+    },
+    7: {
+        desc: "q_3^2",
+        attributes: [],
+        to: [
+            {
+                node: 4,
+                desc: "b",
+                offset: 0,
+                textOffset: 2
+            }, {
+                node: 3,
+                desc: "a",
+                offset: 4,
+                textOffset: 2
+            }
+        ],
+        coords: {
+            x: 60,
+            y: 80
+        }
+    },
+};

@@ -1,9 +1,27 @@
-import { convertToLaTeX } from './converter.js';
-import * as model from './model.js';
-import * as view from './view.js'
-import * as vector from './vectors.js';
+import { convertToLaTeX } from './scripts/converter.js';
+import * as model from './scripts/model.js';
+import * as view from './scripts/view.js'
+import * as vector from './scripts/vectors.js';
 
 document.addEventListener("DOMContentLoaded", main);
+
+const KEYS = {
+    control: false
+}
+
+const THRESHOLDS = {
+    straightEdge: 2,
+    angle: 15
+};
+
+export const ACTION = {
+    draw: false,
+    selectedDragElement: null,
+    selectedElement: null,
+    drawStartNodeId: -1,
+    typing: false,
+    showGrid: false
+}
 
 export const COLOR = {
     black: "black",
@@ -11,11 +29,6 @@ export const COLOR = {
     marked: "#34ebeb",
     transparent: "transparent"
 }
-
-export const THRESHOLDS = {
-    straightEdge: 2,
-    angle: 15
-};
 
 export const DISTANCE = {
     selfEdgeText: 13,
@@ -28,19 +41,6 @@ export const SIZE = {
     nodeRadius: 4,
     grid: 4
 };
-
-const KEYS = {
-    control: false
-}
-
-export const ACTION = {
-    draw: false,
-    selectedDragElement: null,
-    selectedElement: null,
-    drawStartNodeId: -1,
-    typing: false,
-    showGrid: false
-}
 
 export const CONSTANTS = {
     path: "path",
@@ -75,158 +75,7 @@ export const CONSTANTS = {
     central: "central"
 }
 
-let graph = {
-    0: {
-        desc: "q_0",
-        attributes: ["start"],
-        startAngle: 270,
-        to: [
-            {
-                node: 1,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }
-        ],
-        coords: {
-            x: 10,
-            y: 50
-        }
-    },
-    1: {
-        desc: "q_1^1",
-        attributes: [],
-        to: [
-            {
-                node: 2,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }, {
-                node: 5,
-                desc: "a",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 20,
-            y: 20
-        }
-    },
-    2: {
-        desc: "q_2^1",
-        attributes: [],
-        to: [
-            {
-                node: 3,
-                desc: "a",
-                offset: 0,
-                textOffset: -2
-            }, {
-                node: 6,
-                desc: "b",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 40,
-            y: 20
-        }
-    },
-    3: {
-        desc: "q_3^1",
-        attributes: [],
-        to: [
-            {
-                node: 7,
-                desc: "a",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 60,
-            y: 20
-        }
-    },
-    4: {
-        desc: "q_e",
-        attributes: ["end"],
-        to: [],
-        coords: {
-            x: 70,
-            y: 50
-        }
-    },
-    5: {
-        desc: "q_1^2",
-        attributes: [],
-        to: [
-            {
-                node: 6,
-                desc: "b",
-                offset: 0,
-                textOffset: -2
-            }, {
-                node: 1,
-                desc: "a",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 20,
-            y: 80
-        }
-    },
-    6: {
-        desc: "q_2^2",
-        attributes: [],
-        to: [
-            {
-                node: 7,
-                desc: "b",
-                offset: 0,
-                textOffset: -2
-            }, {
-                node: 2,
-                desc: "b",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 40,
-            y: 80
-        }
-    },
-    7: {
-        desc: "q_3^2",
-        attributes: [],
-        to: [
-            {
-                node: 4,
-                desc: "b",
-                offset: 0,
-                textOffset: 2
-            }, {
-                node: 3,
-                desc: "a",
-                offset: 4,
-                textOffset: 2
-            }
-        ],
-        coords: {
-            x: 60,
-            y: 80
-        }
-    },
-};
 let svg;
-// for debugging
-model.setGraph(graph);
 
 function main() {
     // find the svg to draw in
@@ -251,6 +100,46 @@ function main() {
     copyButton.addEventListener("click", e => copyText());
     overlay.addEventListener("click", resetCopyView);
     sizeSelection.addEventListener("change", changeSize);
+}
+
+function handleKeyEvent(event) {
+    if (!event.code) return;
+
+    if (ACTION.typing && (event.code != "Escape" || event.code != "ShiftRight" || event.code != "ShiftLeft")) return;
+
+    switch (event.code) {
+        case "KeyA":
+            addNode();
+            break;
+        case "ShiftRight":
+        case "ShiftLeft":
+            toggleGridView();
+            break;
+        case "ControlLeft":
+        case "ControlRight":
+            KEYS.control = true;
+            break;
+        case "Escape":
+            unselectAll();
+            break;
+        case "Delete":
+        case "Backspace":
+            removeElement();
+            break;
+        case "KeyS":
+            toggleNodeAttribute(true, CONSTANTS.start);
+            break;
+        case "KeyE":
+            toggleNodeAttribute(true, CONSTANTS.end);
+            break;
+        default:
+        // debug only
+        //console.log(event.code);
+    }
+}
+
+function handleKeyUpEvent(event) {
+    KEYS.control = false;
 }
 
 function changeSize(event) {
@@ -308,7 +197,7 @@ function convert(event) {
     // make overlay visible
     overlay.style.display = "flex";
 
-    const tex = convertToLaTeX(graph);
+    const tex = convertToLaTeX(model.getGraph());
     textContainer.textContent = tex;
 }
 
@@ -320,48 +209,8 @@ function resetAll() {
     view.reset();
 }
 
-function handleKeyUpEvent(event) {
-    KEYS.control = false;
-}
-
-function handleKeyEvent(event) {
-    if (!event.code) return;
-
-    if (ACTION.typing && (event.code != "Escape" || event.code != "ShiftRight" || event.code != "ShiftLeft")) return;
-
-    switch (event.code) {
-        case "KeyA":
-            addNode();
-            break;
-        case "ShiftRight":
-        case "ShiftLeft":
-            toggleGridView();
-            break;
-        case "ControlLeft":
-        case "ControlRight":
-            KEYS.control = true;
-            break;
-        case "Escape":
-            unselectAll();
-            break;
-        case "Delete":
-        case "Backspace":
-            removeElement();
-            break;
-        case "KeyS":
-            toggleStartNode(true);
-            break;
-        case "KeyE":
-            toggleEndNode(true);
-            break;
-        default:
-        // debug only
-        //console.log(event.code);
-    }
-}
-
 function initEdgeConfiguration(ids) {
-    const path = model.getEdge(...ids);
+    const path = model.getEdge(ids.from, ids.to);
     const data = path.desc;
 
     const elements = view.showEdgeConfiguration();
@@ -373,7 +222,7 @@ function initEdgeConfiguration(ids) {
     elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
     elements.textDescription.addEventListener("input", evt => {
         evt.preventDefault();
-        model.setEdgeDescription(...ids, textDescription.value);
+        model.setEdgeDescription(ids.from, ids.to, elements.textDescription.value);
 
         view.build();
     });
@@ -488,10 +337,10 @@ function selectEdge(elem) {
     ACTION.selectedElement = elem;
 
     // mark selected node
-    const ids = getIdsOfPath(elem);
+    const ids = view.getIdsOfPath(elem);
     view.setPathColor(ids.from, ids.to, COLOR.marked);
 
-    showEdgeConfiguration(ids);
+    initEdgeConfiguration(ids);
 }
 
 function selectNode(elem) {
@@ -501,7 +350,7 @@ function selectNode(elem) {
     ACTION.selectedElement = elem;
 
     // mark selected node
-    const nodeId = getIdOfNode(elem);
+    const nodeId = view.getIdOfNode(elem);
     view.setNodeColor(nodeId, COLOR.marked);
 
     if (KEYS.control) {
@@ -509,7 +358,7 @@ function selectNode(elem) {
     }
 
     // show view elements
-    showNodeConfiguration(nodeId);
+    initNodeConfiguration(nodeId);
 }
 
 function startDrawing(nodeId) {
@@ -521,14 +370,14 @@ function startDrawing(nodeId) {
 
 function endDrawing(event) {
     // mount the path if on another node (or else throw it away)
-    const coord = getMousePosition(event);
+    const mouse = getMousePosition(event);
 
-    for (let nodeId in graph) {
+    for (let nodeId in model.getGraph()) {
         // check if distance is low enough
-        if (vector.getDistance(coord, model.getCoords(nodeId)) > SIZE.nodeRadius) continue;
+        if (vector.getDistance(mouse, model.getCoords(nodeId)) > SIZE.nodeRadius) continue;
 
         // try adding edge (fails if already exists)
-        const succ = model.addEdge(ACTION.drawStartNodeId, nodeId);
+        const succ = model.addEdge(ACTION.drawStartNodeId, parseInt(nodeId));
         if (succ === -1) continue;
 
         view.build();
@@ -558,26 +407,26 @@ function makeDraggable(evt) {
 
 function mouseDown(evt) {
     // check if node is selected
-    const target = evt.target;
-    const prefix = view.getIdPrefix(target.parentNode);
+    const elem = evt.target.tagName !== CONSTANTS.tspan ? evt.target : evt.target.parentNode;
+    const prefix = view.getIdPrefix(elem.parentNode);
 
     // cancel selection if the background is clicked
-    if (target === svg) {
+    if (elem === svg) {
         unselectAll();
         return;
     }
 
-    if (target.classList.contains(CONSTANTS.draggable)) {
+    if (elem.classList.contains(CONSTANTS.draggable)) {
         switch (prefix) {
             case CONSTANTS.node:
-                selectNode(target.parentNode);
+                selectNode(elem.parentNode);
                 break;
             case CONSTANTS.path:
-                selectEdge(target.parentNode);
+                selectEdge(elem.parentNode);
                 break;
             case CONSTANTS.start:
                 // select the node the starting arrow is attached to
-                selectNode(target.parentNode.parentNode);
+                selectNode(elem.parentNode.parentNode);
                 break;
             default:
                 console.error("Unknown type selected");
@@ -611,7 +460,7 @@ function draw(evt) {
     const dValue = `M${startCoords.x} ${startCoords.y} L${mouse.x} ${mouse.y}`;
     const path = document.getElementById(CONSTANTS.defaultPath);
 
-    view.setPathAttribute(path, dValue);
+    view.updateAttributes(path, { d: dValue} );
 }
 
 function drag(evt) {
@@ -652,7 +501,7 @@ function drag(evt) {
 function dragText(mouse) {
     // get the id of the node
     const ids = view.getIdsOfPath(ACTION.selectedDragElement.parentNode);
-    const edge = model.getEdge(...ids);
+    const edge = model.getEdge(ids.from, ids.to);
     const startNode = model.getNode(ids.from);
     const endNode = model.getNode(ids.to);
 
@@ -676,13 +525,14 @@ function dragText(mouse) {
 
     // handle normal edge
     const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
+    const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
     const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
-    let dist = vector.getDistanceToLine(mouse, directionVector, startNoce.coords) - edge.offset;
+    let dist = vector.getDistanceToLine(mouse, directionVector, startNode.coords) - edge.offset;
     edge.textOffset = dist;
 
     const update = {
-        x: middle.x + normalVector.x * (dist + edgeOffset),
-        y: middle.y + normalVector.y * (dist + edgeOffset)
+        x: middle.x + normalVector.x * (dist + edge.offset),
+        y: middle.y + normalVector.y * (dist + edge.offset)
     };
     view.updateAttributes(ACTION.selectedDragElement, update);
 }
@@ -716,8 +566,8 @@ function dragEdge(mouse) {
     const ids = view.getIdsOfPath(ACTION.selectedDragElement);
 
     // get the coords of the nodes
-    const startNode = getNode(ids.from);
-    const endNode = getNode(ids.to);
+    const startNode = model.getNode(ids.from);
+    const endNode = model.getNode(ids.to);
     const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
     const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
 
@@ -731,7 +581,7 @@ function dragEdge(mouse) {
     dist = snap(dist, SIZE.grid);
 
     // update the offset in the data
-    const edge = model.getEdge(...ids);
+    const edge = model.getEdge(ids.from, ids.to);
     edge.offset = dist;
     const textOffset = edge.textOffset;
 
@@ -774,7 +624,7 @@ function dragStartEdge(mouse) {
 
 function dragNode(mouse) {
     const id = view.getIdOfNode(ACTION.selectedDragElement);
-    const coords = mode.getNode(id);
+    const coords = model.getCoords(id);
 
     mouse.x = snap(mouse.x, SIZE.grid);
     mouse.y = snap(mouse.y, SIZE.grid);
@@ -784,28 +634,31 @@ function dragNode(mouse) {
     for (let nodeId in model.getGraph()) {
         if (nodeId == id) continue;
 
-        const tmpDistance = vector.getDistance(mouse, coords);
+        const tmpDistance = vector.getDistance(mouse, model.getCoords(nodeId));
         distance = Math.min(distance, tmpDistance);
     }
+    
     if (mouse.x > 100 - SIZE.nodeRadius || mouse.x < SIZE.nodeRadius || distance < 2 * SIZE.nodeRadius) {
         mouse.x = coords.x;
     }
-
     if (mouse.y > 100 - SIZE.nodeRadius || mouse.y < SIZE.nodeRadius || distance < 2 * SIZE.nodeRadius) {
         mouse.y = coords.y;
     }
 
     // move the text and the circle
     for (let child of ACTION.selectedDragElement.childNodes) {
-        switch(child.tagName) {
+        switch (child.tagName) {
             case CONSTANTS.circle:
                 view.updateAttributes(child, { cx: mouse.x, cy: mouse.y });
                 break;
             case CONSTANTS.text:
                 view.updateAttributes(child, { x: mouse.x, y: mouse.y });
                 break;
+            case CONSTANTS.g:
+                // handled later
+                break;
             default:
-                console.error("Unknown element found");
+                console.error("Unknown element found: ", child);
         }
     }
 
@@ -813,7 +666,7 @@ function dragNode(mouse) {
     if (model.isNodeStart(id)) {
         const pathContainer = view.getStartEdge(id);
 
-        const startAngle = vector.getVectorFromAngle(node.startAngle);
+        const startAngle = vector.getVectorFromAngle(model.getStartAngle(id));
         const length = SIZE.nodeRadius + DISTANCE.startEdge;
         const dValue = `M${coords.x + startAngle.x * length} ${coords.y + startAngle.y * length} L${coords.x} ${coords.y}`;
 
@@ -824,12 +677,12 @@ function dragNode(mouse) {
     // update the model
     model.setCoords(id, mouse);
 
-    
     // remove the self edge
     const edges = model.getEdgesInvolvingNode(id);
-    if (edges.to.includes(id)) {
-        const index = pathTo.indexOf(id);
-        pathTo.splice(index, 1);
+    if (model.hasSelfEdge(id)) {
+        // remove from list
+        const index = edges.to.indexOf(id);
+        edges.to.splice(index, 1);
 
         const dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
         const selfPath = model.getEdge(id, id);
@@ -840,7 +693,7 @@ function dragNode(mouse) {
         // correct the self edge 
         const update = {
             d: dValue,
-            transform: `rotate(${selfPath.angle}, ${node.coords.x}, ${node.coords.y})`
+            transform: `rotate(${selfPath.angle}, ${coords.x}, ${coords.y})`
         };
         for (let child of path.childNodes) {
             switch (child.tagName) {
@@ -857,8 +710,8 @@ function dragNode(mouse) {
     }
 
     // correct the paths
-    correctEdges(pathTo, id, true);
-    correctEdges(pathFrom, id, false);
+    correctEdges(edges.to, id, true);
+    correctEdges(edges.from, id, false);
 }
 
 function endDrag(evt) {
@@ -879,8 +732,8 @@ function getMousePosition(evt) {
 
 function correctEdges(pathList, id, to) {
     for (let nodeId of pathList) {
-        const fromId = to ? id : nodeId;
-        const toId = to ? nodeId : id;
+        const fromId = to ? nodeId : id;
+        const toId = to ? id : nodeId;
 
         // get the svg path
         const path = view.getPathElemByIds(fromId, toId);
@@ -897,34 +750,50 @@ function correctEdges(pathList, id, to) {
         const dValue = `M${startCoords.x} ${startCoords.y} Q${middle.x + normalVector.x * 2 * dist} ${middle.y + normalVector.y * 2 * dist} ${endCoords.x} ${endCoords.y}`;
         const textOffset = otherNode.textOffset;
 
-        for (const child of path.childNodes) {
-            if (child.tagName == CONSTANTS.path) {
-                child.setAttributeNS(null, "d", dValue);
-            }
+        const update = {
+            x: middle.x + normalVector.x * (dist + textOffset),
+            y: middle.y + normalVector.y * (dist + textOffset)
+        };
 
-            // redraw the label
-            if (child.tagName == CONSTANTS.text) {
-                const normalVector = vector.getNormalVector(startCoords, endCoords);
-                child.setAttributeNS(null, "x", middle.x + normalVector.x * (dist + textOffset));
-                child.setAttributeNS(null, "y", middle.y + normalVector.y * (dist + textOffset));
+        for (const child of path.childNodes) {
+            switch (child.tagName) {
+                case CONSTANTS.path:
+                    view.updateAttributes(child, { d: dValue });
+                    break;
+                case CONSTANTS.text:
+                    view.updateAttributes(child, update);
+                    break;
+                default:
+                    console.error("Unknown element found");
             }
         }
     }
 }
 
 function correctSelfEdgeText(elem, id) {
-    const node = graph[id];
-    const path = node.to.find(e => e.node == id);
+    const path = model.getEdge(id, id);
+    const coords = model.getCoords(id);
     const angleVector = vector.getVectorFromAngle(path.angle);
     const dist = path.textOffset;
 
-    elem.setAttributeNS(null, "x", node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist));
-    elem.setAttributeNS(null, "y", node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist));
+    const update = {
+        x: coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist),
+        y: coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist)
+    };
+    view.updateAttributes(elem, update);
+}
+
+function toggleGridView() {
+    ACTION.showGrid = !ACTION.showGrid;
+
+    view.toggleGridView(ACTION.showGrid);
 }
 
 function downloadSVG(downloadLink) {
     unselectAll();
-    toggleGridView();
+    if (ACTION.showGrid) {
+        toggleGridView();
+    }
 
     var svgData = document.getElementsByTagName("svg")[0].outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });

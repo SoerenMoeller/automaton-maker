@@ -75,8 +75,8 @@ export function getDirectionVector(vectorA, vectorB) {
 }
 
 export function getDistanceToLine(point, direction, pointOnLine) {
-    const dot = vector.getDotProduct({ x: point.x - pointOnLine.x, y: point.y - pointOnLine.y }, direction);
-    const length = vector.getLength(direction);
+    const dot = getDotProduct({ x: point.x - pointOnLine.x, y: point.y - pointOnLine.y }, direction);
+    const length = getLength(direction);
     
     return -dot / length;
 }

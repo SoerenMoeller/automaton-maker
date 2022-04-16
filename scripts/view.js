@@ -1,39 +1,40 @@
 import * as builder from './builder.js';
 import * as vector from './vectors.js';
-import { SIZE, CONSTANTS, COLOR, DISTANCE, THRESHOLDS, ACTION } from './movable.js';
-import { setEdgeAngle } from './model.js';
+import * as model from './model.js';
+import { SIZE, CONSTANTS, COLOR, DISTANCE, ACTION } from '../main.js';
 
 let svg;
 
-export function init(graph) {
+export function init() {
     svg = document.getElementsByTagName("svg")[0];
 
-    build(graph);
+    build();
     return svg;
 }
 
-export function build(graph) {
+export function build() {
+    const graph = model.getGraph();
     reset();
 
     // render the lines first
     for (let node in graph) {
-        buildEdges(graph, node);
+        buildEdges(parseInt(node));
     }
 
     // now render the nodes
     for (let node in graph) {
-        buildNode(graph, node);
+        buildNode(parseInt(node));
     }
 
     reselect();
 }
 
-function buildNode(graph, id) {
-    const node = graph[id];
-    const container = builder.createContainer(svg, `${CONSTANTS.node}_${id}`)
+function buildNode(id) {
+    const container = builder.createContainer(svg, `${CONSTANTS.node}_${id}`);
+    const node = model.getNode(id);
 
     // create starting arrow
-    if (node.attributes.includes(CONSTANTS.start)) {
+    if (model.isNodeStart(id)) {
         const startAngle = vector.getVectorFromAngle(node.startAngle);
         const length = SIZE.nodeRadius + DISTANCE.startEdge;
         const dValue = `M${node.coords.x + startAngle.x * length} ${node.coords.y + startAngle.y * length} L${node.coords.x} ${node.coords.y}`;
@@ -47,7 +48,7 @@ function buildNode(graph, id) {
     // create the circle
     builder.createCircle(container, node.coords, SIZE.nodeRadius);
 
-    if (node.attributes.includes(CONSTANTS.end)) {
+    if (model.isNodeEnd(id)) {
         builder.createCircle(container, node.coords, SIZE.nodeRadius - 0.3);
     }
 
@@ -92,61 +93,52 @@ function initGrid() {
     }
 }
 
-function buildEdges(graph, id) {
-    let node = graph[id];
+function buildEdges(id) {
+    let node = model.getNode(id);
     let coords = node.coords;
 
     for (let otherNode in node.to) {
         let nodeId = node.to[otherNode].node;
-        let otherCoords = graph[nodeId].coords;
+        let otherCoords = model.getNode(nodeId).coords;
 
         const pathContainer = builder.createContainer(svg, `${CONSTANTS.path}_${id}-${nodeId}`);
+        const markerEnd = id !== nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
 
-        // create line
-        const middle = vector.getMiddleOfVector(coords, otherCoords);
-        const normalVector = vector.getNormalVector(coords, otherCoords);
-        const dist = node.to[otherNode].offset;
-        let dValue = `M${coords.x} ${coords.y} Q${middle.x + normalVector.x * dist} ${middle.y + normalVector.y * dist} ${otherCoords.x} ${otherCoords.y}`;
+        const edge = model.getEdge(id, nodeId);
 
         // self-edge
-        if (id == nodeId) {
-            dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
-        }
+        if (id === nodeId) {
+            const dValue = `M${coords.x} ${coords.y - SIZE.nodeRadius + 1} A2 4 0 1 1 ${coords.x + 0.01} ${coords.y - SIZE.nodeRadius + 1}`;
+            const outerPath = builder.createPath(pathContainer, "", dValue, 1, "", COLOR.transparent, true);
+            const innerPath = builder.createPath(pathContainer, "", dValue, 0.1, markerEnd, COLOR.black, true);
+            outerPath.setAttributeNS(null, "transform", `rotate(${edge.angle}, ${node.coords.x}, ${node.coords.y})`);
+            innerPath.setAttributeNS(null, "transform", `rotate(${edge.angle}, ${node.coords.x}, ${node.coords.y})`);
 
-        const markerEnd = id != nodeId ? CONSTANTS.arrow : CONSTANTS.selfarrow;
-        const outerPath = builder.createPath(pathContainer, "", dValue, 1, "", COLOR.transparent, true);
-        const innerPath = builder.createPath(pathContainer, "", dValue, 0.1, markerEnd, COLOR.black, true);
-
-        if (id == nodeId) {
-            const path = node.to.find(e => e.node == id);
-            outerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
-            innerPath.setAttributeNS(null, "transform", `rotate(${path.angle}, ${node.coords.x}, ${node.coords.y})`);
-        }
-
-        // append the text in the middle of the node
-        if (id != nodeId) {
-            const normalVector = vector.getNormalVector(node.coords, otherCoords);
-            const middle = vector.getMiddleOfVector(node.coords, otherCoords);
-            const offset = node.to.find(e => e.node == nodeId).textOffset;
+            const angleVector = vector.getVectorFromAngle(edge.angle);
             const textCoords = {
-                x: middle.x + normalVector.x * (dist / 2 + offset),
-                y: middle.y + normalVector.y * (dist / 2 + offset)
+                x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - edge.textOffset),
+                y: node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - edge.textOffset)
+            }
+            builder.createTextNode(pathContainer, textCoords, edge.desc, true);
+        } else {
+            const middle = vector.getMiddleOfVector(coords, otherCoords);
+            const normalVector = vector.getNormalVector(coords, otherCoords);
+            const dist = node.to[otherNode].offset;
+            const dValue = `M${coords.x} ${coords.y} Q${middle.x + normalVector.x * 2 * dist} ${middle.y + normalVector.y * 2 * dist} ${otherCoords.x} ${otherCoords.y}`;
+            builder.createPath(pathContainer, "", dValue, 1, "", COLOR.transparent, true);
+            builder.createPath(pathContainer, "", dValue, 0.1, markerEnd, COLOR.black, true);
+
+            const offset = edge.textOffset;
+            const textCoords = {
+                x: middle.x + normalVector.x * (dist + offset),
+                y: middle.y + normalVector.y * (dist + offset)
             }
             builder.createTextNode(pathContainer, textCoords, node.to[otherNode].desc, true);
-        } else {
-            const path = node.to.find(e => e.node == id);
-            const angleVector = vector.getVectorFromAngle(path.angle);
-
-            const textCoords = {
-                x: node.coords.x + angleVector.x * (DISTANCE.selfEdgeText - path.textOffset),
-                y: node.coords.y + angleVector.y * (DISTANCE.selfEdgeText - path.textOffset)
-            }
-            builder.createTextNode(pathContainer, textCoords, path.desc, true);
         }
     }
 }
 
-function setNodeColor(nodeId, color = COLOR.black) {
+export function setNodeColor(nodeId, color = COLOR.black) {
     const selector = `${CONSTANTS.node}_${nodeId}`;
     const node = document.getElementById(selector);
 
@@ -157,7 +149,7 @@ function setNodeColor(nodeId, color = COLOR.black) {
     }
 }
 
-function setPathColor(fromId, toId, color=COLOR.black) {
+export function setPathColor(fromId, toId, color=COLOR.black) {
     const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const node = document.getElementById(selector);
 
@@ -220,10 +212,9 @@ export function resetConfigurationView() {
     return container;
 }
 
-export function toggleGridView() {
-    ACTION.showGrid = !ACTION.showGrid;
+export function toggleGridView(show) {
     const gridContainer = document.getElementById("gridContainer");
-    const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
+    const color = show ? COLOR.grid : COLOR.transparent;
     
     for (let child of gridContainer.childNodes) {
         child.setAttributeNS(null, CONSTANTS.stroke, color);
@@ -247,8 +238,8 @@ export function showEdgeConfiguration() {
     const container = resetConfigurationView();
 
     // create the elements
-    const removeButton = createRemoveButton(container, "remove");
-    const textDescriptionContainer = createDescriptionContainer(container);
+    const removeButton = builder.createRemoveButton(container, "remove");
+    const textDescriptionContainer = builder.createDescriptionContainer(container);
     const textDescription = textDescriptionContainer.childNodes[1];
 
     return {
@@ -261,10 +252,10 @@ export function showNodeConfiguration() {
     const container = resetConfigurationView();
 
     // create the elements
-    const removeButton = createRemoveButton(container, "remove");
-    const checkBoxEndContainer = createCheckBoxContainer(container, CONSTANTS.end);
-    const checkBoxStartContainer = createCheckBoxContainer(container, CONSTANTS.start);
-    const textDescriptionContainer = createDescriptionContainer(container);
+    const removeButton = builder.createRemoveButton(container, "remove");
+    const checkBoxEndContainer = builder.createCheckBoxContainer(container, CONSTANTS.end);
+    const checkBoxStartContainer = builder.createCheckBoxContainer(container, CONSTANTS.start);
+    const textDescriptionContainer = builder.createDescriptionContainer(container);
 
     const checkBoxEnd = checkBoxEndContainer.childNodes[1];
     const checkBoxStart = checkBoxStartContainer.childNodes[1];
@@ -295,7 +286,7 @@ export function toggleCheckBox(name) {
     build();
 }
 
-function getPathElemByIds(fromId, toId) {
+export function getPathElemByIds(fromId, toId) {
     const selector = `${CONSTANTS.path}_${fromId}-${toId}`;
     const nodeElem = document.getElementById(selector);
 
@@ -336,6 +327,6 @@ export function updateAttributes(element, attributes) {
 
 export function getStartEdge(nodeId) {
     const selector = `${CONSTANTS.start}_${nodeId}`;
-    
+
     return document.getElementById(selector);
 }

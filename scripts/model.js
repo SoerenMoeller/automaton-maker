@@ -1,4 +1,4 @@
-import { CONSTANTS } from "./movable";
+import { CONSTANTS } from "../main.js";
 
 let graph = {};
 let count = 0;
@@ -8,6 +8,7 @@ export function reset() {
     count = 0;
 }
 
+// for debugging (injecting graph)
 export function setGraph(newGraph) {
     graph = newGraph;
 }
@@ -42,7 +43,7 @@ export function addNode() {
 
 export function addEdge(fromId, toId) {
     // check if there is no existing edge yet
-    const existentEdge = node.to.find(e => e.node == toId);
+    const existentEdge = getEdge(fromId, toId);
     if (existentEdge) return -1;
 
     const edge = {
@@ -58,7 +59,7 @@ export function addEdge(fromId, toId) {
         edge.offset = 0;
     }
 
-    node.to.push(edge);
+    getNode(fromId).to.push(edge);
 }
 
 export function removeNode(id) {
@@ -77,14 +78,8 @@ export function removeEdge(fromId, toId) {
 }
 
 export function getEdgesInvolvingNode(id) {
-    const edgesTo = [];
-    for (let nodeId in graph) {
-        let to = graph[nodeId].to;
-        edges.concat(to.filter(e => to[e].node == id));
-    }
-
-    // avoid having self edges in both
-    const edgesFrom = getNode(id).to.map(e => e.node);
+    const edgesTo = Object.keys(graph).filter(nodeId => getEdge(nodeId, id)).map(e => parseInt(e));
+    const edgesFrom = getNode(id).to.map(e => e.node).filter(e => e !== id);
 
     return {
         to: edgesTo,
@@ -93,8 +88,7 @@ export function getEdgesInvolvingNode(id) {
 }
 
 export function getEdge(fromId, toId) {
-    const node = graph[fromId];
-    const path = node.to.find(e => e.node == toId);
+    const path = getNode(fromId).to.find(e => e.node === toId);
 
     return path;
 }
@@ -102,6 +96,10 @@ export function getEdge(fromId, toId) {
 export function setEdgeDescription(fromId, toId, data) {
     const path = getEdge(fromId, toId);
     path.desc = data;
+}
+
+export function setNodeDescription(nodeId, data) {
+    getNode(nodeId).desc = data;
 }
 
 export function getNodeDescription(nodeId) {
@@ -122,11 +120,15 @@ export function setNodeDecription(nodeId, data) {
     getNode(nodeId).desc = data;
 }
 
+export function getStartAngle(nodeId) {
+    return getNode(nodeId).startAngle;
+}
+
 export function toggleNodeAttribute(nodeId, attribute) {
     const node = getNode(nodeId);
-    const isEnd = isNodeEnd(nodeId);
+    const add = (attribute === CONSTANTS.start) ? isNodeStart(nodeId) : isNodeEnd(nodeId);
 
-    if (isEnd) {
+    if (add) {
         delete node.attributes[node.attributes.indexOf(attribute)];
 
         if (attribute === CONSTANTS.start) {
@@ -151,4 +153,8 @@ export function setStartAngle(nodeId, angle) {
 
 export function setCoords(nodeId, coords) {
     getNode(nodeId).coords = coords;
+}
+
+export function hasSelfEdge(nodeId) {
+    return getEdgesInvolvingNode(nodeId).to.includes(nodeId);
 }

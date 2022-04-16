@@ -1,4 +1,4 @@
-import { SIZE, CONSTANTS, COLOR, DISTANCE, THRESHOLDS } from './movable.js';
+import { SIZE, CONSTANTS, COLOR } from '../main.js';
 import { parseText } from './converter.js';
 
 // Methods for building svg/dom elements 
@@ -128,33 +128,14 @@ export function createTextNode(parent, position, text, draggable) {
     return textNode;
 }
 
-function createSVGElement(n, v = {}) {
-    n = document.createElementNS("http://www.w3.org/2000/svg", n);
-    for (var p in v) {
-        n.setAttributeNS(null, p.replace("_", "-"), v[p]);
-    }
-    return n
-}
-
-function createDOMElement(parent, name, attributes = {}) {
-    const element = document.createElement(name);
-
-    for (let attr in attributes) {
-        element.setAttribute(attr, attributes[attr]);
-    }
-
-    parent.appendChild(element);
-    return element
-}
-
-function createRemoveButton(parent, text) {
+export function createRemoveButton(parent, text) {
     const button = createDOMElement(parent, "button", { id: "removeButton" });
     button.innerText = text;
 
     return button;
 }
 
-function createDescriptionContainer(parent) {
+export function createDescriptionContainer(parent) {
     const container = createContainerWithText(parent, "Description");
 
     createInputForm(container, CONSTANTS.text, "descriptionTextInput");
@@ -162,7 +143,7 @@ function createDescriptionContainer(parent) {
     return container;
 }
 
-function createCheckBoxContainer(parent, text) {
+export function createCheckBoxContainer(parent, text) {
     const upperCaseText = text[0].toUpperCase() + text.substring(1)
     const container = createContainerWithText(parent, upperCaseText);
 
@@ -186,4 +167,23 @@ function createInputForm(parent, type, id) {
         id: id,
         name: id
     });
+}
+
+function createSVGElement(n, v = {}) {
+    n = document.createElementNS("http://www.w3.org/2000/svg", n);
+    for (var p in v) {
+        n.setAttributeNS(null, p.replace("_", "-"), v[p]);
+    }
+    return n
+}
+
+function createDOMElement(parent, name, attributes = {}) {
+    const element = document.createElement(name);
+
+    for (let attr in attributes) {
+        element.setAttribute(attr, attributes[attr]);
+    }
+
+    parent.appendChild(element);
+    return element
 }
