@@ -6,16 +6,10 @@ In general, NFAs, DFAs and TMs should be supported.
 ## For the future
 - Labels on nodes
 - Multiple lines on edge labels
-- Snapping of text in grid mode
 - Multi select elements
 
 ## Bugs
 - Arrow offset
-- LaTeX converter doesn't parse the text yet
-
-## Hot features to come
-- Convert the automaton into LaTeX-Code
-- Convert the automaton into img-File
 
 ## Usage
 - Click: Select an element

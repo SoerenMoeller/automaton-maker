@@ -13,7 +13,8 @@ const KEYS = {
 
 const THRESHOLDS = {
     straightEdge: 2,
-    angle: 15
+    angle: 15,
+    text: 1
 };
 
 export const ACTION = {
@@ -507,12 +508,13 @@ function dragText(mouse) {
 
     // handle self edge text
     if (ids.from === ids.to) {
-        const angleVector = vector.getVectorFromAngle(path.angle);
+        const angleVector = vector.getVectorFromAngle(edge.angle);
         const basePosition = { x: startNode.coords.x + angleVector.x * DISTANCE.selfEdgeText, y: startNode.coords.y + angleVector.y * DISTANCE.selfEdgeText };
         const normalAngle = vector.getNormalVector(startNode.coords, basePosition);
 
         let dist = vector.getDistanceToLine(mouse, normalAngle, basePosition);
-        egde.textOffset = dist;
+        dist = snap(dist, THRESHOLDS.text);
+        edge.textOffset = dist;
 
         const update = {
             x: startNode.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist),
@@ -528,6 +530,7 @@ function dragText(mouse) {
     const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
     const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
     let dist = vector.getDistanceToLine(mouse, directionVector, startNode.coords) - edge.offset;
+    dist = snap(dist, THRESHOLDS.text);
     edge.textOffset = dist;
 
     const update = {

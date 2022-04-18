@@ -164,11 +164,11 @@ function convertEdge(nodeId, graph) {
             }
         }
         
-        edgeTex += " node ";
-
+        edgeTex += " node [align=center";
         if (edge.desc.length !== 0) {
-            edgeTex += `[${getEdgeTextPosition(nodeId, otherId, graph)}] `;
+            edgeTex += `, ${getEdgeTextPosition(nodeId, otherId, graph)}`;
         }
+        edgeTex += "];"
 
         edgeTex += `{${parseTextToLaTeX(edge.desc)}} (${otherId})\n`;
 
