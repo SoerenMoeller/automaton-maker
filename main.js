@@ -31,8 +31,6 @@ export const COLOR = {
     grid: "rgba(224, 128, 31, 0.3)",
     marked: "#34ebeb",
     transparent: "transparent",
-    green: "#88FA76",
-    red: "#f56666"
 }
 
 export const DISTANCE = {

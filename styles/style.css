@@ -4,6 +4,8 @@
     --svg-size: 80vmin;
     --gap: 1rem;
     --border-rad: 0.25rem;
+    --green: #88FA76;
+    --red: #F56666;
 }
 
 html {
@@ -84,6 +86,14 @@ select {
     height: var(--option-height);
     width: var(--option-height);
     min-width: var(--option-height);
+}
+
+.no-border-radius {
+    border-radius: 0;
+}
+
+.border-radius-right {
+    border-radius: var(--border-rad) var(--border-rad) 0 0;
 }
 
 button:active,
