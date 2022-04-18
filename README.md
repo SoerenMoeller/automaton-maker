@@ -8,6 +8,9 @@ In general, NFAs, DFAs and TMs should be supported.
 - Multiple lines on edge labels
 - Multi select elements
 
+## TODO: 
+- Test out how to create text with multiple lines in svg
+
 ## Bugs
 - Arrow offset
 
