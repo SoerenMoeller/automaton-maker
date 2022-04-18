@@ -1,11 +1,18 @@
 :root {
-    --button-height: 1.5rem;
+    --option-height: 1.5rem;
+    --option-width: 6rem;
     --svg-size: 80vmin;
+    --gap: 1rem;
+    --border-rad: 0.25rem;
 }
 
 html {
     font-family: 'Open Sans', sans-serif;
     font-size: min(100%, 2vw);
+    font-weight: 100;
+}
+
+h3 {
     font-weight: 100;
 }
 
@@ -30,22 +37,24 @@ svg {
 
     background-color: rgb(235, 235, 235);
     border: 1px solid rgb(163, 192, 246);
-    border-radius: 0.25rem;
+    border-radius: var(--border-rad);
 }
 
 img {
-    height: var(--button-height);
-    width: var(--button-height);
+    height: var(--option-height);
+    width: var(--option-height);
 
     margin: 0 0.5rem;
     background-color: #88FA76;
     border: 1px solid black;
-    border-radius: 0.25rem;
+    border-radius: var(--border-rad);
 }
 
 input[type=text] {
-    height: var(--button-height);
-    width: 6rem;
+    height: var(--option-height);
+    width: var(--option-width);
+
+    font-size: 0.8rem;
 }
 
 button,
@@ -53,22 +62,28 @@ a {
     color: white;
     background-color: #4D6BB0;
     border: 1px solid #213A73;
-    border-radius: 0.25rem;
+    border-radius: var(--border-rad);
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    width: 6rem;
-    min-width: 6rem;
-    height: var(--button-height);
+    width: var(--option-width);
+    min-width: var(--option-width);
+    height: var(--option-height);
 
     cursor: pointer;
 }
 
 select {
-    width: 6rem;
-    height: var(--button-height);
+    width: var(--option-width);
+    height: var(--option-height);
+}
+
+.smallButton {
+    height: var(--option-height);
+    width: var(--option-height);
+    min-width: var(--option-height);
 }
 
 button:active,
@@ -81,6 +96,7 @@ a:hover {
 #removeButton {
     background-color: #f56666;
     border-color: #db1111;
+    margin-left: var(--gap);
 }
 
 #removeButton:active,
@@ -117,6 +133,7 @@ a:hover {
 
     height: 100%;
     gap: 0.5rem;
+    margin-left: var(--gap);
 }
 
 .flow-right {
@@ -124,15 +141,13 @@ a:hover {
     flex-direction: row-reverse;
     align-items: center;
 
-    gap: 1rem;
-
     width: 100%;
     height: 100%;
 }
 
 #actionContainer {
     display: flex;
-    gap: 1rem;
+    gap: var(--gap);
     width: 100%;
 }
 
@@ -149,7 +164,7 @@ a:hover {
 }
 
 #copy-container {
-    border-radius: 4px;
+    border-radius: var(--border-rad);
     border: 1px solid black;
 
     width: 100%;
@@ -191,10 +206,6 @@ a:hover {
 
     box-shadow: 3px 3px 6px 3px rgba(0, 0, 0, 0.1), -3px -3px 6px 3px rgba(0, 0, 0, 0.1),
         -3px 3px 6px 3px rgba(0, 0, 0, 0.1), 3px -3px 6px 3px rgba(0, 0, 0, 0.1);
-}
-
-h3 {
-    font-size: 100;
 }
 
 ::-webkit-scrollbar {

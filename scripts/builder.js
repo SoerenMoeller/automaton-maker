@@ -132,7 +132,15 @@ export function createTextNode(parent, position, text, draggable) {
 
 export function createRemoveButton(parent, text) {
     const button = createDOMElement(parent, "button", { id: "removeButton" });
-    button.innerText = text;
+    button.textContent = text;
+
+    return button;
+}
+
+export function createSmallButton(parent, text, color) {
+    const button = createDOMElement(parent, "button", { class: "smallButton" });
+    button.textContent = text;
+    button.style["background-color"] = color;
 
     return button;
 }
@@ -164,11 +172,17 @@ function createContainerWithText(parent, text) {
 }
 
 function createInputForm(parent, type, id) {
-    return createDOMElement(parent, "input", {
+    const settings = {
         type: type,
         id: id,
         name: id
-    });
+    };
+
+    if (type === CONSTANTS.text) {
+        settings.autocomplete = "off";
+    }
+
+    return createDOMElement(parent, "input", settings);
 }
 
 function createSVGElement(n, v = {}) {

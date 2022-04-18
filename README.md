@@ -10,6 +10,8 @@ In general, NFAs, DFAs and TMs should be supported.
 
 ## TODO: 
 - Test out how to create text with multiple lines in svg
+- Add text size
+- Fix css mess!
 
 ## Bugs
 - Arrow offset

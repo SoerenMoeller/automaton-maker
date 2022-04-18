@@ -30,7 +30,9 @@ export const COLOR = {
     black: "black",
     grid: "rgba(224, 128, 31, 0.3)",
     marked: "#34ebeb",
-    transparent: "transparent"
+    transparent: "transparent",
+    green: "#88FA76",
+    red: "#f56666"
 }
 
 export const DISTANCE = {
@@ -239,8 +241,8 @@ function initNodeConfiguration(nodeId) {
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
-    elements.checkBoxEnd.addEventListener("click", evt => toggleEndNode(false));
-    elements.checkBoxStart.addEventListener("click", evt => toggleStartNode(false));
+    elements.checkBoxEnd.addEventListener("click", evt => toggleNodeAttribute(false, CONSTANTS.end));
+    elements.checkBoxStart.addEventListener("click", evt => toggleNodeAttribute(false, CONSTANTS.start));
     elements.textDescription.addEventListener("focusin", evt => ACTION.typing = true);
     elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
     elements.textDescription.addEventListener("input", evt => {
@@ -253,15 +255,16 @@ function initNodeConfiguration(nodeId) {
 }
 
 function toggleNodeAttribute(changeView, attribute) {
-    if (!ACTION.selectedElement || view.getIdPrefix(ACTION.selectedElement) != CONSTANTS.node) return;
+    if (!ACTION.selectedElement || view.getIdPrefix(ACTION.selectedElement) !== CONSTANTS.node) return;
 
     const nodeId = view.getIdOfNode(ACTION.selectedElement);
     model.toggleNodeAttribute(nodeId, attribute);
-
+    
     if (changeView) {
         const checkBox = (attribute === CONSTANTS.start) ? "startCheckBox" : "endCheckBox";
         view.toggleCheckBox(checkBox);
     }
+    view.build();
 }
 
 function addNode() {
