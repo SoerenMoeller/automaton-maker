@@ -1,3 +1,7 @@
+import { getDirectionVector } from './vectors.js';
+
+"use strict";
+
 export function convertToLaTeX(graph) {
     let output = getTikzHeader();
 
@@ -48,7 +52,7 @@ function convertNode(nodeId, graph) {
     }
 
     // add node description
-    nodeTex += `{$${node.desc}$};\n`;
+    nodeTex += `{${parseTextToLaTeX(node.desc)}};\n`;
 
     return nodeTex;
 }
@@ -166,7 +170,7 @@ function convertEdge(nodeId, graph) {
             edgeTex += `[${getEdgeTextPosition(nodeId, otherId, graph)}] `;
         }
 
-        edgeTex += `{${edge.desc}} (${otherId})\n`;
+        edgeTex += `{${parseTextToLaTeX(edge.desc)}} (${otherId})\n`;
 
         // for formatting only
         edgeTex += " ".repeat(9 + nodeId.toString().length);
@@ -317,4 +321,12 @@ export function parseText(input) {
     }
 
     return result;
+}
+
+function parseTextToLaTeX(input) {
+    if (input.length === 0) return "";
+
+    const parsed = parseText(input);
+
+    return `$${parsed.text}_{${parsed.sub}}^{${parsed.super}}$`;
 }

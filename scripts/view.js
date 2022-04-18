@@ -3,6 +3,8 @@ import * as vector from './vectors.js';
 import * as model from './model.js';
 import { SIZE, CONSTANTS, COLOR, DISTANCE, ACTION } from '../main.js';
 
+"use strict";
+
 let svg;
 
 export function init() {
@@ -329,4 +331,8 @@ export function getStartEdge(nodeId) {
     const selector = `${CONSTANTS.start}_${nodeId}`;
 
     return document.getElementById(selector);
+}
+
+export function getSVG() {
+    return svg;
 }

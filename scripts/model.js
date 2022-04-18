@@ -1,5 +1,7 @@
 import { CONSTANTS } from "../main.js";
 
+"use strict";
+
 let graph = {};
 let count = 0;
 

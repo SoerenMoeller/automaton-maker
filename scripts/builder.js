@@ -1,6 +1,8 @@
 import { SIZE, CONSTANTS, COLOR } from '../main.js';
 import { parseText } from './converter.js';
 
+"use strict";
+
 // Methods for building svg/dom elements 
 
 export function createMarker(parent, id, width, height, refX, refY, color, polygonPoints) {

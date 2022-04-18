@@ -3,6 +3,8 @@ import * as model from './scripts/model.js';
 import * as view from './scripts/view.js'
 import * as vector from './scripts/vectors.js';
 
+"use strict";
+
 document.addEventListener("DOMContentLoaded", main);
 
 const KEYS = {
@@ -75,11 +77,9 @@ export const CONSTANTS = {
     central: "central"
 }
 
-let svg;
-
 function main() {
     // find the svg to draw in
-    svg = view.init(model.getGraph());
+    const svg = view.init(model.getGraph());
     svg.addEventListener("load", makeDraggable);
 
     document.addEventListener("keydown", handleKeyEvent);
@@ -411,7 +411,7 @@ function mouseDown(evt) {
     const prefix = view.getIdPrefix(elem.parentNode);
 
     // cancel selection if the background is clicked
-    if (elem === svg) {
+    if (elem === view.getSVG()) {
         unselectAll();
         return;
     }
@@ -723,7 +723,7 @@ function endDrag(evt) {
 }
 
 function getMousePosition(evt) {
-    var CTM = svg.getScreenCTM();
+    var CTM = view.getSVG().getScreenCTM();
     return {
         x: (evt.clientX - CTM.e) / CTM.a,
         y: (evt.clientY - CTM.f) / CTM.d
@@ -795,7 +795,7 @@ function downloadSVG(downloadLink) {
         toggleGridView();
     }
 
-    var svgData = document.getElementsByTagName("svg")[0].outerHTML;
+    var svgData = view.getSVG().outerHTML;
     var svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
     var svgUrl = URL.createObjectURL(svgBlob);
 
