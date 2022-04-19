@@ -214,11 +214,19 @@ export function resetConfigurationView() {
     return container;
 }
 
+export function isShowingMultiLine() {
+    const container = getConfigurationContainer();
+    if (!container) return;
+    
+    const length = container.childNodes.length;
+    return container.childNodes[length - 2].tagName.toLowerCase() === CONSTANTS.select;
+}
+
 export function injectMultipleLineView() {
     const container = getConfigurationContainer();
     const length = container.childNodes.length;
-    if (!container || container.childNodes[length - 2].tagName.toLowerCase() === CONSTANTS.select) return;
-    
+    if (!container || isShowingMultiLine()) return;
+
     const box = document.createElement("select");
     container.insertBefore(box, container.childNodes[length - 1]);
 }
@@ -227,7 +235,11 @@ export function removeMultipleLineView() {
     const container = getConfigurationContainer();
     if (!container) return;
 
-    container.childNodes.eq(2).remove();
+    const length = container.childNodes.length;
+    console.log(container.childNodes[length - 2]);
+    container.childNodes[length - 2].remove();
+    console.log(container.childNodes[length - 2]);
+    console.log("Donw");
 }
 
 function getConfigurationContainer() {

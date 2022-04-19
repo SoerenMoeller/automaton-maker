@@ -82,6 +82,18 @@ export const CONSTANTS = {
     option: "option"
 }
 
+model.setGraph({
+    0: {
+        desc: ["hi", "hallo"],
+        to: [],
+        attributes: [],
+        coords: {
+            x: 10,
+            y: 10
+        }
+    }
+});
+
 function main() {
     // find the svg to draw in
     const svg = view.init(model.getGraph());
@@ -143,7 +155,6 @@ function handleKeyEvent(event) {
         case "KeyT":
             // toggle showing multi line option -- only toggle off when 0/1 line
             switchMultiLine();
-            view.injectMultipleLineView();
             break;
         default:
         // debug only
@@ -168,8 +179,12 @@ function switchMultiLine() {
         desc = model.getEdgeDescription(ids.from, ids.to);
     }
     
-    if (desc.length > 1) {
-        
+    if (!view.isShowingMultiLine()) {
+        // show
+        view.injectMultipleLineView();
+    } else if (desc.length < 2) {
+        // unshow
+        view.removeMultipleLineView();
     }
 }
 
@@ -254,7 +269,13 @@ function initEdgeConfiguration(ids) {
     const data = path.desc;
 
     const elements = view.showEdgeConfiguration();
-    elements.textDescription.value = data;
+
+    if (data.length > 1) {
+        view.injectMultipleLineView();
+    }
+    if (data.length !== 0) {
+        elements.textDescription.value = data[0];
+    }
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
@@ -270,11 +291,18 @@ function initEdgeConfiguration(ids) {
 
 function initNodeConfiguration(nodeId) {
     const elements = view.showNodeConfiguration();
+    const data = model.getNodeDescription(nodeId);
 
     // fill with existing data
     elements.checkBoxEnd.checked = model.isNodeEnd(nodeId);
     elements.checkBoxStart.checked = model.isNodeStart(nodeId);
-    elements.textDescription.value = model.getNodeDescription(nodeId);
+
+    if (data.length > 1) {
+        view.injectMultipleLineView();
+    }
+    if (data.length !== 0) {
+        elements.textDescription.value = data[0];
+    }
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
