@@ -4,12 +4,23 @@
     --svg-size: 80vmin;
     --gap: 1rem;
     --border-rad: 0.25rem;
+
+    --dark-blue: #5680E9;
+    --blue: #5AB9EA;
+    --light-blue: #84CEEB;
+    --grey: #C1C8E4;
+    --purple: #8860D0;
 }
 
 html {
     font-family: 'Open Sans', sans-serif;
     font-size: min(100%, 2vw);
     font-weight: 100;
+}
+
+body {
+    background: var(--grey);
+    background: radial-gradient(circle, var(--grey) 40%, var(--light-blue) 100%);
 }
 
 h3 {
@@ -36,8 +47,10 @@ svg {
     height: var(--svg-size);
 
     background-color: rgb(235, 235, 235);
-    border: 1px solid rgb(163, 192, 246);
+    border: 1px solid var(--purple);
     border-radius: var(--border-rad);
+
+    box-shadow: 3px 3px 6px var(--purple);
 }
 
 img {
@@ -71,8 +84,8 @@ input[type=checkbox] {
 button,
 a {
     color: white;
-    background-color: #4D6BB0;
-    border: 1px solid #213A73;
+    background-color: var(--dark-blue);
+    border: 1px solid var(--purple);
     border-radius: var(--border-rad);
 
     display: flex;

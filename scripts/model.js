@@ -110,6 +110,12 @@ export function getNodeDescription(nodeId) {
     return node.desc; 
 }
 
+export function getEdgeDescription(fromId, toId) {
+    const edge = getEdge(fromId, toId);
+
+    return node.desc; 
+}
+
 export function isNodeEnd(nodeId) {
     return getNode(nodeId).attributes.includes(CONSTANTS.end);
 }

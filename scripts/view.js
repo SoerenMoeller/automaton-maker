@@ -208,10 +208,32 @@ export function unmarkAll(graph) {
 }
 
 export function resetConfigurationView() {
-    const container = document.getElementsByClassName("flow-right")[0];
+    const container = getConfigurationContainer();
     container.innerHTML = "";
 
     return container;
+}
+
+export function injectMultipleLineView() {
+    const container = getConfigurationContainer();
+    const length = container.childNodes.length;
+    if (!container || container.childNodes[length - 2].tagName.toLowerCase() === CONSTANTS.select) return;
+    
+    const box = document.createElement("select");
+    container.insertBefore(box, container.childNodes[length - 1]);
+}
+
+export function removeMultipleLineView() {
+    const container = getConfigurationContainer();
+    if (!container) return;
+
+    container.childNodes.eq(2).remove();
+}
+
+function getConfigurationContainer() {
+    const containers = document.getElementsByClassName("flow-right");
+
+    return containers[0];
 }
 
 export function toggleGridView(show) {

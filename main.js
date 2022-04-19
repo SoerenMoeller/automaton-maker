@@ -23,8 +23,7 @@ export const ACTION = {
     selectedElement: null,
     drawStartNodeId: -1,
     typing: false,
-    showGrid: false,
-    multiLineDescription: false
+    showGrid: false
 }
 
 export const COLOR = {
@@ -139,10 +138,12 @@ function handleKeyEvent(event) {
             toggleNodeAttribute(true, CONSTANTS.end);
             break;
         case "KeyD":
-            focusDescription();
+            focusDescription(event);
             break;
         case "KeyT":
             // toggle showing multi line option -- only toggle off when 0/1 line
+            switchMultiLine();
+            view.injectMultipleLineView();
             break;
         default:
         // debug only
@@ -154,10 +155,30 @@ function handleKeyUpEvent(event) {
     KEYS.control = false;
 }
 
-function focusDescription() {
+function switchMultiLine() {
+    if (!ACTION.selectedElement) return;
+
+    const isNode = view.getIdPrefix(ACTION.selectedElement) === CONSTANTS.node;
+    let desc;
+    if (isNode) {
+        const nodeId = view.getIdOfNode(ACTION.selectedElement);
+        desc = model.getNodeDescription(nodeId);
+    } else {
+        const ids = view.getIdsOfPath(ACTION.selectedElement);
+        desc = model.getEdgeDescription(ids.from, ids.to);
+    }
+    
+    if (desc.length > 1) {
+        
+    }
+}
+
+function focusDescription(event) {
     const descriptionTextInput = document.getElementById("descriptionTextInput");
     if (!descriptionTextInput) return;
 
+    // prevent letter from getting pasted into the field
+    event.preventDefault();
     descriptionTextInput.focus();
 }
 
