@@ -130,6 +130,17 @@ export function createTextNode(parent, position, text, draggable) {
     return textNode;
 }
 
+export function createSelection(parent, ...options) {
+    const selection = createDOMElement(parent, CONSTANTS.select);
+    console.log(options);
+    for (let opt of options) {
+        const option = createDOMElement(selection, CONSTANTS.option, { value: opt });
+        option.textContent = opt;
+    }
+
+    return selection;
+}
+
 export function createRemoveButton(parent, text) {
     const button = createDOMElement(parent, "button", { id: "removeButton" });
     button.textContent = text;
@@ -137,10 +148,9 @@ export function createRemoveButton(parent, text) {
     return button;
 }
 
-export function createSmallButton(parent, text, color) {
-    const button = createDOMElement(parent, "button", { class: "smallButton" });
+export function createSmallButton(parent, text, color, ...additionalClasses) {
+    const button = createDOMElement(parent, "button", { class: `smallButton ${color} ${additionalClasses.join(" ")}` });
     button.textContent = text;
-    button.style["background-color"] = color;
 
     return button;
 }

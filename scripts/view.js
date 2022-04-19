@@ -241,16 +241,18 @@ export function showEdgeConfiguration() {
 
     // create the elements
     const removeButton = builder.createRemoveButton(container, "remove");
+    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red, "border-radius-right");
+    const addTextButton = builder.createSmallButton(container, "+", COLOR.green, "no-border-radius");
+    const descriptionSelection = builder.createSelection(container);
     const textDescriptionContainer = builder.createDescriptionContainer(container);
     const textDescription = textDescriptionContainer.childNodes[1];
-    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red);
-    const addTextButton = builder.createSmallButton(container, "+", COLOR.green);
 
     return {
         removeButton: removeButton,
         textDescription: textDescription,
         addTextButton: addTextButton,
-        removeTextButton: removeTextButton
+        removeTextButton: removeTextButton,
+        descriptionSelection: descriptionSelection
     }
 }
 
@@ -261,8 +263,8 @@ export function showNodeConfiguration() {
     const removeButton = builder.createRemoveButton(container, "remove");
     const checkBoxEndContainer = builder.createCheckBoxContainer(container, CONSTANTS.end);
     const checkBoxStartContainer = builder.createCheckBoxContainer(container, CONSTANTS.start);
-    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red);
-    const addTextButton = builder.createSmallButton(container, "+", COLOR.green);
+    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red, "border-radius-right");
+    const addTextButton = builder.createSmallButton(container, "+", COLOR.green, "no-border-radius");
     const textDescriptionContainer = builder.createDescriptionContainer(container);
 
     const checkBoxEnd = checkBoxEndContainer.childNodes[1];

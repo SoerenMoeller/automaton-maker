@@ -4,8 +4,6 @@
     --svg-size: 80vmin;
     --gap: 1rem;
     --border-rad: 0.25rem;
-    --green: #88FA76;
-    --red: #F56666;
 }
 
 html {
@@ -55,8 +53,19 @@ img {
 input[type=text] {
     height: var(--option-height);
     width: var(--option-width);
+    border-radius: var(--border-rad) 0 0 var(--border-rad);
+    border: solid 1px black;
 
     font-size: 0.8rem;
+}
+
+input[type=text]:focus {
+    outline: none;
+}
+
+input[type=checkbox] {
+    height: 1rem;
+    width: 1rem;
 }
 
 button,
@@ -77,6 +86,32 @@ a {
     cursor: pointer;
 }
 
+.red {
+    background-color: #F56666;
+    border-color: #DB1111;
+}
+
+.red:active, .red:hover {
+    background-color: #E65858;
+}
+
+.green {
+    background-color: #88FA76;
+    border-color: #43AD32;
+}
+
+.green:active, .green:hover {
+    background-color: #8EF27F;
+}
+
+.no-border-radius {
+    border-radius: 0;
+}
+
+.border-radius-right {
+    border-radius: 0 var(--border-rad) var(--border-rad) 0;
+}
+
 select {
     width: var(--option-width);
     height: var(--option-height);
@@ -88,13 +123,6 @@ select {
     min-width: var(--option-height);
 }
 
-.no-border-radius {
-    border-radius: 0;
-}
-
-.border-radius-right {
-    border-radius: var(--border-rad) var(--border-rad) 0 0;
-}
 
 button:active,
 a:active,
@@ -104,8 +132,6 @@ a:hover {
 }
 
 #removeButton {
-    background-color: #f56666;
-    border-color: #db1111;
     margin-left: var(--gap);
 }
 

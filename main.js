@@ -23,7 +23,8 @@ export const ACTION = {
     selectedElement: null,
     drawStartNodeId: -1,
     typing: false,
-    showGrid: false
+    showGrid: false,
+    multiLineDescription: false
 }
 
 export const COLOR = {
@@ -31,6 +32,8 @@ export const COLOR = {
     grid: "rgba(224, 128, 31, 0.3)",
     marked: "#34ebeb",
     transparent: "transparent",
+    green: "green",
+    red: "red"
 }
 
 export const DISTANCE = {
@@ -75,7 +78,9 @@ export const CONSTANTS = {
     class: "class",
     stroke: "stroke",
     middle: "middle",
-    central: "central"
+    central: "central",
+    select: "select",
+    option: "option"
 }
 
 function main() {
@@ -133,6 +138,12 @@ function handleKeyEvent(event) {
         case "KeyE":
             toggleNodeAttribute(true, CONSTANTS.end);
             break;
+        case "KeyD":
+            focusDescription();
+            break;
+        case "KeyT":
+            // toggle showing multi line option -- only toggle off when 0/1 line
+            break;
         default:
         // debug only
         //console.log(event.code);
@@ -141,6 +152,13 @@ function handleKeyEvent(event) {
 
 function handleKeyUpEvent(event) {
     KEYS.control = false;
+}
+
+function focusDescription() {
+    const descriptionTextInput = document.getElementById("descriptionTextInput");
+    if (!descriptionTextInput) return;
+
+    descriptionTextInput.focus();
 }
 
 function changeSize(event) {

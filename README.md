@@ -12,6 +12,8 @@ In general, NFAs, DFAs and TMs should be supported.
 - Test out how to create text with multiple lines in svg
 - Add text size
 - Fix css mess!
+- Add toggle for typing
+- Add toggle for multi line editing
 
 ## Bugs
 - Arrow offset
