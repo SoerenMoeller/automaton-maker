@@ -37,8 +37,7 @@ export const COLOR = {
 
 export const DISTANCE = {
     selfEdgeText: 13,
-    startEdge: 7,
-    multiText: 3
+    startEdge: 7
 };
 
 export const SIZE = {
@@ -110,6 +109,7 @@ function main() {
     const copyButton = document.getElementById("copyButton");
     const overlay = document.getElementById("overlay");
     const sizeSelection = document.getElementById("selectedSize");
+    const textSizeSelection = document.getElementsByTagName("input")[0];
 
     resetButton.addEventListener("click", e => resetAll());
     downloadButton.addEventListener("click", e => downloadSVG(downloadButton));
@@ -118,6 +118,17 @@ function main() {
     copyButton.addEventListener("click", e => copyText());
     overlay.addEventListener("click", resetCopyView);
     sizeSelection.addEventListener("change", changeSize);
+    textSizeSelection.addEventListener("change", changeTextSize);
+}
+
+function changeTextSize(event) {
+    const textSizeSelection = event.target;
+    const value = parseFloat(textSizeSelection.value);
+    
+    SIZE.text = value;
+    SIZE.subText = value - 1;
+
+    view.build();
 }
 
 function handleKeyEvent(event) {
@@ -206,24 +217,18 @@ function changeSize(event) {
         case "small":
             SIZE.grid = 3;
             SIZE.nodeRadius = 3;
-            SIZE.text = 1.5;
-            SIZE.subText = 1;
             DISTANCE.selfEdgeText = 11;
             DISTANCE.startEdge = 5;
             break;
         case "medium":
             SIZE.grid = 4;
             SIZE.nodeRadius = 4;
-            SIZE.text = 2.5;
-            SIZE.subText = 1.5;
             DISTANCE.selfEdgeText = 13;
             DISTANCE.startEdge = 7;
             break;
         case "big":
             SIZE.grid = 6;
             SIZE.nodeRadius = 6;
-            SIZE.text = 3.5;
-            SIZE.subText = 2;
             DISTANCE.selfEdgeText = 16;
             DISTANCE.startEdge = 10;
             break;

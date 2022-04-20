@@ -8,7 +8,6 @@ In general, NFAs, DFAs and TMs should be supported.
 - Multi select elements
 
 ## TODO: 
-- Add text size
 - Fix css mess!
 - Better input handling
 - update usage

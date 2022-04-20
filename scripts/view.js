@@ -339,13 +339,14 @@ export function correctSubTexts(desc, coords, textNode) {
     const parsedText = parseText(desc);
 
     const lines = parsedText.length;
-    let offset = coords.y - Math.floor(lines / 2) * DISTANCE.multiText;
+    const distance = SIZE.text + 0.5;
+    let offset = coords.y - Math.floor(lines / 2) * distance;
     if (lines % 2 === 0) {
-        offset += DISTANCE.multiText / 2;
+        offset += distance / 2;
     }
     
     for (let child of textNode.childNodes) {
         updateAttributes(child, { x: coords.x, y: offset });
-        offset += DISTANCE.multiText;
+        offset += distance;
     }
 }

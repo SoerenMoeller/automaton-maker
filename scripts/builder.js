@@ -105,9 +105,10 @@ export function createTextNode(parent, position, text, draggable) {
 
     // check starting position of the text 
     const lines = parsedText.length;
-    let offset = position.y - Math.floor(lines / 2) * DISTANCE.multiText;
+    const distance = SIZE.text + SIZE.subText - 1;
+    let offset = position.y - Math.floor(lines / 2) * distance;
     if (lines % 2 === 0) {
-        offset += DISTANCE.multiText / 2;
+        offset += distance / 2;
     }
 
     const textNode = createSVGElement(CONSTANTS.text, configuration);
@@ -117,7 +118,7 @@ export function createTextNode(parent, position, text, draggable) {
             x: position.x,
             y: offset
         });
-        offset += DISTANCE.multiText;
+        offset += distance;
         textLine.textContent = parsedLine.text;
 
         if (parsedLine.sub != "") {
