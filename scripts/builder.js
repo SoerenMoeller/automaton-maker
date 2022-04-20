@@ -162,7 +162,7 @@ export function createRemoveButton(parent, text) {
 }
 
 export function createDescriptionContainer(parent) {
-    const container = createContainerWithText(parent, "Description");
+    const container = createContainerWithText(parent, "Description", "full-width");
 
     createInputForm(container, CONSTANTS.text, "descriptionTextInput");
 
@@ -178,8 +178,8 @@ export function createCheckBoxContainer(parent, text) {
     return container;
 }
 
-function createContainerWithText(parent, text) {
-    const container = createDOMElement(parent, "div", { class: "flex-container" });
+function createContainerWithText(parent, text, ...additionalClasses) {
+    const container = createDOMElement(parent, "div", { class: `flex-container ${additionalClasses.join(" ")}` });
 
     const textElement = createDOMElement(container, "p");
     textElement.innerText = text;

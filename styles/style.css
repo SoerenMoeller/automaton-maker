@@ -185,6 +185,10 @@ a:hover {
     margin-left: var(--gap);
 }
 
+.full-width {
+    width: 100%;
+}
+
 .flow-right {
     display: flex;
     flex-direction: row-reverse;
