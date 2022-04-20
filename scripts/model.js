@@ -1,4 +1,5 @@
 import { CONSTANTS } from "../main.js";
+import { parseInputToArray } from "./converter.js";
 
 "use strict";
 
@@ -29,7 +30,7 @@ export function getCoords(id) {
 
 export function addNode() {
     let node = {
-        desc: "",
+        desc: [],
         attributes: [],
         coords: {
             x: 10,
@@ -50,7 +51,7 @@ export function addEdge(fromId, toId) {
 
     const edge = {
         node: parseInt(toId),
-        desc: "",
+        desc: [],
         textOffset: -2
     }
 
@@ -97,11 +98,11 @@ export function getEdge(fromId, toId) {
 
 export function setEdgeDescription(fromId, toId, data) {
     const path = getEdge(fromId, toId);
-    path.desc = data;
+    path.desc = parseInputToArray(data);
 }
 
 export function setNodeDescription(nodeId, data) {
-    getNode(nodeId).desc = data;
+    getNode(nodeId).desc = parseInputToArray(data);
 }
 
 export function getNodeDescription(nodeId) {
@@ -113,7 +114,7 @@ export function getNodeDescription(nodeId) {
 export function getEdgeDescription(fromId, toId) {
     const edge = getEdge(fromId, toId);
 
-    return node.desc; 
+    return edge.desc; 
 }
 
 export function isNodeEnd(nodeId) {
@@ -152,11 +153,11 @@ export function toggleNodeAttribute(nodeId, attribute) {
 }
 
 export function setEdgeAngle(nodeId, angle) {
-    model.getEdge(nodeId, nodeId).angle = angle;
+    getEdge(nodeId, nodeId).angle = angle;
 }
 
 export function setStartAngle(nodeId, angle) {
-    model.getNode(nodeId).startAngle = angle;
+    getNode(nodeId).startAngle = angle;
 }
 
 export function setCoords(nodeId, coords) {

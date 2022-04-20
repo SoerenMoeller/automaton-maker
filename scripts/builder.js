@@ -123,7 +123,7 @@ export function createTextNode(parent, position, text, draggable) {
         if (parsedLine.sub != "") {
             const subTextNode = createSVGElement(CONSTANTS.tspan, {
                 baseline_shift: CONSTANTS.sub,
-                dy: 0.5
+                dy: 0.1
             });
             subTextNode.textContent = parsedLine.sub;
             textLine.appendChild(subTextNode);
@@ -131,11 +131,17 @@ export function createTextNode(parent, position, text, draggable) {
 
         if (parsedLine.super != "") {
             // shift back the super text on top of the sub text
-            const backShift = -parsedLine.sub.length * (SIZE.subText / 2);
+            let shift = -parsedLine.sub.length;
+            if (shift % 2 === 0) {
+                shift += 0.5;
+            } else {
+                shift -= 0.25;
+            }
+            const backShift = shift * (SIZE.subText / 2);
             const superTextNode = createSVGElement(CONSTANTS.tspan, {
                 baseline_shift: CONSTANTS.super,
                 dx: backShift,
-                dy: 0
+                dy: 0.3
             });
             superTextNode.textContent = parsedLine.super;
             textLine.appendChild(superTextNode);
@@ -148,26 +154,8 @@ export function createTextNode(parent, position, text, draggable) {
     return textNode;
 }
 
-export function createSelection(parent, ...options) {
-    const selection = createDOMElement(parent, CONSTANTS.select);
-    console.log(options);
-    for (let opt of options) {
-        const option = createDOMElement(selection, CONSTANTS.option, { value: opt });
-        option.textContent = opt;
-    }
-
-    return selection;
-}
-
 export function createRemoveButton(parent, text) {
     const button = createDOMElement(parent, "button", { id: "removeButton" });
-    button.textContent = text;
-
-    return button;
-}
-
-export function createSmallButton(parent, text, color, ...additionalClasses) {
-    const button = createDOMElement(parent, "button", { class: `smallButton ${color} ${additionalClasses.join(" ")}` });
     button.textContent = text;
 
     return button;

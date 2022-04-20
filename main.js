@@ -38,7 +38,7 @@ export const COLOR = {
 export const DISTANCE = {
     selfEdgeText: 13,
     startEdge: 7,
-    multiText: 2
+    multiText: 3
 };
 
 export const SIZE = {
@@ -85,7 +85,7 @@ export const CONSTANTS = {
 
 model.setGraph({
     0: {
-        desc: ["hi", "hallo", "ok", "cool", "ja", "man"],
+        desc: ["q_end^hallo", "q_hi^htart"],
         to: [],
         attributes: [],
         coords: {
@@ -270,13 +270,7 @@ function initEdgeConfiguration(ids) {
     const data = path.desc;
 
     const elements = view.showEdgeConfiguration();
-
-    if (data.length > 1) {
-        view.injectMultipleLineView();
-    }
-    if (data.length !== 0) {
-        elements.textDescription.value = data[0];
-    }
+    elements.textDescription.value = data.join(" || ");
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
@@ -297,13 +291,7 @@ function initNodeConfiguration(nodeId) {
     // fill with existing data
     elements.checkBoxEnd.checked = model.isNodeEnd(nodeId);
     elements.checkBoxStart.checked = model.isNodeStart(nodeId);
-
-    if (data.length > 1) {
-        view.injectMultipleLineView();
-    }
-    if (data.length !== 0) {
-        elements.textDescription.value = data[0];
-    }
+    elements.textDescription.value = data.join(" || ");
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
@@ -476,8 +464,12 @@ function makeDraggable(evt) {
 }
 
 function mouseDown(evt) {
-    // check if node is selected
-    const elem = evt.target.tagName !== CONSTANTS.tspan ? evt.target : evt.target.parentNode;
+    let elem = evt.target;
+
+    while (elem.tagName === CONSTANTS.tspan) {
+        elem = elem.parentNode;
+    }
+    
     const prefix = view.getIdPrefix(elem.parentNode);
 
     // cancel selection if the background is clicked
@@ -505,7 +497,11 @@ function mouseDown(evt) {
 }
 
 function startDrag(evt) {
-    let elem = evt.target.tagName !== CONSTANTS.tspan ? evt.target : evt.target.parentNode;
+    let elem = evt.target;
+
+    while (elem.tagName === CONSTANTS.tspan) {
+        elem = elem.parentNode;
+    }
 
     if (elem.classList.contains(CONSTANTS.draggable)) {
         let parent = elem.parentNode;
@@ -607,12 +603,13 @@ function dragText(mouse) {
     }
 
     view.updateAttributes(ACTION.selectedDragElement, update);
-    view.correctSubTexts(edge.desc, ACTION.selectedDragElement);
+    view.correctSubTexts(edge.desc, update, ACTION.selectedDragElement);
 }
 
 function dragSelfEdge(coord) {
-    const { nodeId } = view.getIdsOfPath(ACTION.selectedDragElement);
-    const node = getNode(nodeId);
+    const ids = view.getIdsOfPath(ACTION.selectedDragElement);
+    const nodeId = ids.from;
+    const node = model.getNode(nodeId);
 
     let angle = vector.getAngle360Degree(node.coords, coord);
     if (ACTION.showGrid) {
@@ -836,6 +833,7 @@ function correctEdges(pathList, id, to) {
                     break;
                 case CONSTANTS.text:
                     view.updateAttributes(child, update);
+                    view.correctSubTexts(model.getEdgeDescription(fromId, toId), update, child);
                     break;
                 default:
                     console.error("Unknown element found");
@@ -845,16 +843,17 @@ function correctEdges(pathList, id, to) {
 }
 
 function correctSelfEdgeText(elem, id) {
-    const path = model.getEdge(id, id);
+    const edge = model.getEdge(id, id);
     const coords = model.getCoords(id);
-    const angleVector = vector.getVectorFromAngle(path.angle);
-    const dist = path.textOffset;
+    const angleVector = vector.getVectorFromAngle(edge.angle);
+    const dist = edge.textOffset;
 
     const update = {
         x: coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist),
         y: coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist)
     };
     view.updateAttributes(elem, update);
+    view.correctSubTexts(model.getEdgeDescription(id, id), update, elem);
 }
 
 function toggleGridView() {

@@ -65,8 +65,8 @@ img {
 
 input[type=text] {
     height: var(--option-height);
-    width: var(--option-width);
-    border-radius: var(--border-rad) 0 0 var(--border-rad);
+    width: 100%;
+    border-radius: var(--border-rad);
     border: solid 1px black;
 
     font-size: 0.8rem;

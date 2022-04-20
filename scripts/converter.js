@@ -340,3 +340,7 @@ function parseTextToLaTeX(input) {
 
     return output;
 }
+
+export function parseInputToArray(input) {
+    return input.split("||").map(e => e.trim());
+}

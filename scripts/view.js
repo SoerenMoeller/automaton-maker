@@ -209,44 +209,10 @@ export function unmarkAll(graph) {
 }
 
 export function resetConfigurationView() {
-    const container = getConfigurationContainer();
+    const container =  document.getElementsByClassName("flow-right")[0];
     container.innerHTML = "";
 
     return container;
-}
-
-export function isShowingMultiLine() {
-    const container = getConfigurationContainer();
-    if (!container) return;
-    
-    const length = container.childNodes.length;
-    return container.childNodes[length - 2].tagName.toLowerCase() === CONSTANTS.select;
-}
-
-export function injectMultipleLineView() {
-    const container = getConfigurationContainer();
-    const length = container.childNodes.length;
-    if (!container || isShowingMultiLine()) return;
-
-    const box = document.createElement("select");
-    container.insertBefore(box, container.childNodes[length - 1]);
-}
-
-export function removeMultipleLineView() {
-    const container = getConfigurationContainer();
-    if (!container) return;
-
-    const length = container.childNodes.length;
-    console.log(container.childNodes[length - 2]);
-    container.childNodes[length - 2].remove();
-    console.log(container.childNodes[length - 2]);
-    console.log("Donw");
-}
-
-function getConfigurationContainer() {
-    const containers = document.getElementsByClassName("flow-right");
-
-    return containers[0];
 }
 
 export function toggleGridView(show) {
@@ -276,18 +242,12 @@ export function showEdgeConfiguration() {
 
     // create the elements
     const removeButton = builder.createRemoveButton(container, "remove");
-    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red, "border-radius-right");
-    const addTextButton = builder.createSmallButton(container, "+", COLOR.green, "no-border-radius");
-    const descriptionSelection = builder.createSelection(container);
     const textDescriptionContainer = builder.createDescriptionContainer(container);
     const textDescription = textDescriptionContainer.childNodes[1];
 
     return {
         removeButton: removeButton,
-        textDescription: textDescription,
-        addTextButton: addTextButton,
-        removeTextButton: removeTextButton,
-        descriptionSelection: descriptionSelection
+        textDescription: textDescription
     }
 }
 
@@ -298,8 +258,6 @@ export function showNodeConfiguration() {
     const removeButton = builder.createRemoveButton(container, "remove");
     const checkBoxEndContainer = builder.createCheckBoxContainer(container, CONSTANTS.end);
     const checkBoxStartContainer = builder.createCheckBoxContainer(container, CONSTANTS.start);
-    const removeTextButton = builder.createSmallButton(container, "-", COLOR.red, "border-radius-right");
-    const addTextButton = builder.createSmallButton(container, "+", COLOR.green, "no-border-radius");
     const textDescriptionContainer = builder.createDescriptionContainer(container);
 
     const checkBoxEnd = checkBoxEndContainer.childNodes[1];
@@ -310,9 +268,7 @@ export function showNodeConfiguration() {
         removeButton: removeButton,
         checkBoxEnd: checkBoxEnd,
         checkBoxStart: checkBoxStart,
-        textDescription: textDescription,
-        addTextButton: addTextButton,
-        removeTextButton: removeTextButton
+        textDescription: textDescription
     }
 }
 
