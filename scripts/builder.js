@@ -1,4 +1,4 @@
-import { SIZE, CONSTANTS, COLOR } from '../main.js';
+import { SIZE, CONSTANTS, COLOR, DISTANCE } from '../main.js';
 import { parseText } from './converter.js';
 
 "use strict";
@@ -24,7 +24,7 @@ export function createMarker(parent, id, width, height, refX, refY, color, polyg
     parent.appendChild(marker);
 }
 
-export function createPath(parent, id, dValue, stroke_width, marker, color, draggable=false) {
+export function createPath(parent, id, dValue, stroke_width, marker, color, draggable = false) {
     const path = createSVGElement(CONSTANTS.path, {
         d: dValue,
         stroke: color,
@@ -85,7 +85,7 @@ export function createStyle(parent, styling) {
 
     style.textContent = styling;
     parent.appendChild(style);
-    
+
     return style;
 }
 
@@ -96,34 +96,52 @@ export function createTextNode(parent, position, text, draggable) {
         x: position.x,
         y: position.y,
         text_anchor: "middle",
-        alignment_baseline: "central"
+        alignment_baseline: "central",
+        dominant_baseline: "middle"
     };
     if (draggable) {
         configuration.class = CONSTANTS.draggable;
     }
 
-    const textNode = createSVGElement(CONSTANTS.text, configuration);
-    textNode.innerHTML = parsedText.text;
-
-    if (parsedText.sub != "") {
-        const subTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.sub,
-            dy: "0.5"
-        });
-        subTextNode.innerHTML = parsedText.sub;
-        textNode.appendChild(subTextNode);
+    // check starting position of the text 
+    const lines = parsedText.length;
+    let offset = position.y - Math.floor(lines / 2) * DISTANCE.multiText;
+    if (lines % 2 === 0) {
+        offset += DISTANCE.multiText / 2;
     }
 
-    if (parsedText.super != "") {
-        // shift back the super text on top of the sub text
-        const backShift = -parsedText.sub.length * (SIZE.subText / 2);
-        const superTextNode = createSVGElement(CONSTANTS.tspan, {
-            baseline_shift: CONSTANTS.super,
-            dx: backShift,
-            dy: "0"
+    const textNode = createSVGElement(CONSTANTS.text, configuration);
+    for (let parsedLine of parsedText) {
+        
+        const textLine = createSVGElement(CONSTANTS.tspan, {
+            x: position.x,
+            y: offset
         });
-        superTextNode.innerHTML = parsedText.super;
-        textNode.appendChild(superTextNode);
+        offset += DISTANCE.multiText;
+        textLine.textContent = parsedLine.text;
+
+        if (parsedLine.sub != "") {
+            const subTextNode = createSVGElement(CONSTANTS.tspan, {
+                baseline_shift: CONSTANTS.sub,
+                dy: 0.5
+            });
+            subTextNode.textContent = parsedLine.sub;
+            textLine.appendChild(subTextNode);
+        }
+
+        if (parsedLine.super != "") {
+            // shift back the super text on top of the sub text
+            const backShift = -parsedLine.sub.length * (SIZE.subText / 2);
+            const superTextNode = createSVGElement(CONSTANTS.tspan, {
+                baseline_shift: CONSTANTS.super,
+                dx: backShift,
+                dy: 0
+            });
+            superTextNode.textContent = parsedLine.super;
+            textLine.appendChild(superTextNode);
+        }
+
+        textNode.appendChild(textLine);
     }
 
     parent.appendChild(textNode);

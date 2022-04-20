@@ -37,7 +37,8 @@ export const COLOR = {
 
 export const DISTANCE = {
     selfEdgeText: 13,
-    startEdge: 7
+    startEdge: 7,
+    multiText: 2
 };
 
 export const SIZE = {
@@ -84,7 +85,7 @@ export const CONSTANTS = {
 
 model.setGraph({
     0: {
-        desc: ["hi", "hallo"],
+        desc: ["hi", "hallo", "ok", "cool", "ja", "man"],
         to: [],
         attributes: [],
         coords: {
@@ -178,7 +179,7 @@ function switchMultiLine() {
         const ids = view.getIdsOfPath(ACTION.selectedElement);
         desc = model.getEdgeDescription(ids.from, ids.to);
     }
-    
+
     if (!view.isShowingMultiLine()) {
         // show
         view.injectMultipleLineView();
@@ -324,7 +325,7 @@ function toggleNodeAttribute(changeView, attribute) {
 
     const nodeId = view.getIdOfNode(ACTION.selectedElement);
     model.toggleNodeAttribute(nodeId, attribute);
-    
+
     if (changeView) {
         const checkBox = (attribute === CONSTANTS.start) ? "startCheckBox" : "endCheckBox";
         view.toggleCheckBox(checkBox);
@@ -529,7 +530,7 @@ function draw(evt) {
     const dValue = `M${startCoords.x} ${startCoords.y} L${mouse.x} ${mouse.y}`;
     const path = document.getElementById(CONSTANTS.defaultPath);
 
-    view.updateAttributes(path, { d: dValue} );
+    view.updateAttributes(path, { d: dValue });
 }
 
 function drag(evt) {
@@ -574,6 +575,8 @@ function dragText(mouse) {
     const startNode = model.getNode(ids.from);
     const endNode = model.getNode(ids.to);
 
+    let update;
+
     // handle self edge text
     if (ids.from === ids.to) {
         const angleVector = vector.getVectorFromAngle(edge.angle);
@@ -584,28 +587,27 @@ function dragText(mouse) {
         dist = snap(dist, THRESHOLDS.text);
         edge.textOffset = dist;
 
-        const update = {
+        update = {
             x: startNode.coords.x + angleVector.x * (DISTANCE.selfEdgeText - dist),
             y: startNode.coords.y + angleVector.y * (DISTANCE.selfEdgeText - dist)
         };
-        view.updateAttributes(ACTION.selectedDragElement, update);
+    } else {
+        // handle normal edge
+        const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
+        const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
+        const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
+        let dist = vector.getDistanceToLine(mouse, directionVector, startNode.coords) - edge.offset;
+        dist = snap(dist, THRESHOLDS.text);
+        edge.textOffset = dist;
 
-        return;
+        update = {
+            x: middle.x + normalVector.x * (dist + edge.offset),
+            y: middle.y + normalVector.y * (dist + edge.offset)
+        };
     }
 
-    // handle normal edge
-    const middle = vector.getMiddleOfVector(startNode.coords, endNode.coords);
-    const normalVector = vector.getNormalVector(startNode.coords, endNode.coords);
-    const directionVector = vector.getDirectionVector(startNode.coords, endNode.coords);
-    let dist = vector.getDistanceToLine(mouse, directionVector, startNode.coords) - edge.offset;
-    dist = snap(dist, THRESHOLDS.text);
-    edge.textOffset = dist;
-
-    const update = {
-        x: middle.x + normalVector.x * (dist + edge.offset),
-        y: middle.y + normalVector.y * (dist + edge.offset)
-    };
     view.updateAttributes(ACTION.selectedDragElement, update);
+    view.correctSubTexts(edge.desc, ACTION.selectedDragElement);
 }
 
 function dragSelfEdge(coord) {
@@ -708,7 +710,7 @@ function dragNode(mouse) {
         const tmpDistance = vector.getDistance(mouse, model.getCoords(nodeId));
         distance = Math.min(distance, tmpDistance);
     }
-    
+
     if (mouse.x > 100 - SIZE.nodeRadius || mouse.x < SIZE.nodeRadius || distance < 2 * SIZE.nodeRadius) {
         mouse.x = coords.x;
     }
@@ -724,6 +726,7 @@ function dragNode(mouse) {
                 break;
             case CONSTANTS.text:
                 view.updateAttributes(child, { x: mouse.x, y: mouse.y });
+                view.correctSubTexts(model.getNodeDescription(id), mouse, child);
                 break;
             case CONSTANTS.g:
                 // handled later

@@ -297,30 +297,35 @@ function getSelfEdgeTextPosition(nodeId, graph) {
 }
 
 export function parseText(input) {
-    let result = {
-        text: "",
-        sub: "",
-        super: ""
-    };
+    const results = [];
+    for (let line of input) {
+        let result = {
+            text: "",
+            sub: "",
+            super: ""
+        };
 
-    const subSplit = input.split("_");
-    const superSplit = input.split("^");
+        const subSplit = line.split("_");
+        const superSplit = line.split("^");
 
-    if (subSplit.length === 1 && superSplit.length === 1) {
-        result.text = subSplit[0];
-    } else if (subSplit.length !== 1 && superSplit.length === 1) {
-        result.text = subSplit[0];
-        result.sub = subSplit[1];
-    } else if (subSplit.length === 1 && superSplit.length !== 1) {
-        result.text = superSplit[0];
-        result.super = superSplit[1];
-    } else {
-        result.text = subSplit[0];
-        result.sub = subSplit[1].split("^")[0];
-        result.super = superSplit[1];
+        if (subSplit.length === 1 && superSplit.length === 1) {
+            result.text = subSplit[0];
+        } else if (subSplit.length !== 1 && superSplit.length === 1) {
+            result.text = subSplit[0];
+            result.sub = subSplit[1];
+        } else if (subSplit.length === 1 && superSplit.length !== 1) {
+            result.text = superSplit[0];
+            result.super = superSplit[1];
+        } else {
+            result.text = subSplit[0];
+            result.sub = subSplit[1].split("^")[0];
+            result.super = superSplit[1];
+        }
+
+        results.push(result);
     }
 
-    return result;
+    return results;
 }
 
 function parseTextToLaTeX(input) {
@@ -328,5 +333,10 @@ function parseTextToLaTeX(input) {
 
     const parsed = parseText(input);
 
-    return `$${parsed.text}_{${parsed.sub}}^{${parsed.super}}$`;
+    let output = "";
+    for (let parsedLine of parsed) {
+        output += `$${parsedLine.text}_{${parsedLine.sub}}^{${parsedLine.super}}$`;
+    }
+
+    return output;
 }

@@ -1,6 +1,7 @@
 import * as builder from './builder.js';
 import * as vector from './vectors.js';
 import * as model from './model.js';
+import { parseText } from './converter.js';
 import { SIZE, CONSTANTS, COLOR, DISTANCE, ACTION } from '../main.js';
 
 "use strict";
@@ -72,7 +73,7 @@ export function reset() {
     builder.createMarker(defs, CONSTANTS.defaultMarker, 16, 10, 16, 5, COLOR.marked, polygon);
 
     // style
-    const style = `text {font: italic ${SIZE.text}px sans-serif; user-select: none;} tspan {font: italic ${SIZE.subText}px sans-serif; user-select: none;}`;
+    const style = `text, text > tspan {font: italic ${SIZE.text}px sans-serif; user-select: none;} text > tspan > tspan {font: italic ${SIZE.subText}px sans-serif; user-select: none;}`;
     builder.createStyle(svg, style);
 
     // add default path for later usage
@@ -376,4 +377,19 @@ export function getStartEdge(nodeId) {
 
 export function getSVG() {
     return svg;
+}
+
+export function correctSubTexts(desc, coords, textNode) {
+    const parsedText = parseText(desc);
+
+    const lines = parsedText.length;
+    let offset = coords.y - Math.floor(lines / 2) * DISTANCE.multiText;
+    if (lines % 2 === 0) {
+        offset += DISTANCE.multiText / 2;
+    }
+    
+    for (let child of textNode.childNodes) {
+        updateAttributes(child, { x: coords.x, y: offset });
+        offset += DISTANCE.multiText;
+    }
 }
