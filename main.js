@@ -8,7 +8,8 @@ import * as vector from './scripts/vectors.js';
 document.addEventListener("DOMContentLoaded", main);
 
 const KEYS = {
-    control: false
+    control: false,
+    shift: false
 }
 
 const THRESHOLDS = {
@@ -134,14 +135,20 @@ function changeTextSize(event) {
 function handleKeyEvent(event) {
     if (!event.code) return;
 
-    if (ACTION.typing && (event.code != "Escape" || event.code != "ShiftRight" || event.code != "ShiftLeft")) return;
+    if (!KEYS.control && event.code.startsWith("Key")) {
+        focusDescription(event);
+        return;
+    }
 
+    // the letter-keys here are always combined with CTRL
     switch (event.code) {
         case "KeyA":
+            event.preventDefault();
             addNode();
             break;
         case "ShiftRight":
         case "ShiftLeft":
+            KEYS.shift = true;
             toggleGridView();
             break;
         case "ControlLeft":
@@ -161,13 +168,6 @@ function handleKeyEvent(event) {
         case "KeyE":
             toggleNodeAttribute(true, CONSTANTS.end);
             break;
-        case "KeyD":
-            focusDescription(event);
-            break;
-        case "KeyT":
-            // toggle showing multi line option -- only toggle off when 0/1 line
-            switchMultiLine();
-            break;
         default:
         // debug only
         //console.log(event.code);
@@ -176,36 +176,13 @@ function handleKeyEvent(event) {
 
 function handleKeyUpEvent(event) {
     KEYS.control = false;
-}
-
-function switchMultiLine() {
-    if (!ACTION.selectedElement) return;
-
-    const isNode = view.getIdPrefix(ACTION.selectedElement) === CONSTANTS.node;
-    let desc;
-    if (isNode) {
-        const nodeId = view.getIdOfNode(ACTION.selectedElement);
-        desc = model.getNodeDescription(nodeId);
-    } else {
-        const ids = view.getIdsOfPath(ACTION.selectedElement);
-        desc = model.getEdgeDescription(ids.from, ids.to);
-    }
-
-    if (!view.isShowingMultiLine()) {
-        // show
-        view.injectMultipleLineView();
-    } else if (desc.length < 2) {
-        // unshow
-        view.removeMultipleLineView();
-    }
+    KEYS.shift = false;
 }
 
 function focusDescription(event) {
     const descriptionTextInput = document.getElementById("descriptionTextInput");
     if (!descriptionTextInput) return;
 
-    // prevent letter from getting pasted into the field
-    event.preventDefault();
     descriptionTextInput.focus();
 }
 
@@ -360,7 +337,7 @@ function removeElement() {
 }
 
 function removePath() {
-    const ids = getIdsOfPath(ACTION.selectedElement);
+    const ids = view.getIdsOfPath(ACTION.selectedElement);
 
     // remove edge from logic
     model.removeEdge(ids.from, ids.to);
@@ -371,7 +348,7 @@ function removePath() {
 }
 
 function removeNode() {
-    const nodeId = getIdOfNode(ACTION.selectedElement);
+    const nodeId = view.getIdOfNode(ACTION.selectedElement);
 
     // fetch edges related to the node
     const edges = model.getEdgesInvolvingNode(nodeId);
