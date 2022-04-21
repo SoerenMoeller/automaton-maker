@@ -285,6 +285,14 @@ a:hover {
         -3px 3px 6px 3px rgba(0, 0, 0, 0.1), 3px -3px 6px 3px rgba(0, 0, 0, 0.1);
 }
 
+#mode-overlay {
+    text-transform: uppercase;
+    
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+}
+
 ::-webkit-scrollbar {
     width: 10px;
     margin: 10px

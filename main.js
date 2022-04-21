@@ -18,14 +18,21 @@ const THRESHOLDS = {
     text: 1
 };
 
+const MODES = {
+    write: "write",
+    edit: "edit",
+    add: "add"
+};
+
 export const ACTION = {
     draw: false,
     selectedDragElement: null,
     selectedElement: null,
     drawStartNodeId: -1,
     typing: false,
-    showGrid: false
-}
+    showGrid: false,
+    mode: MODES.edit
+};
 
 export const COLOR = {
     black: "black",
@@ -34,7 +41,7 @@ export const COLOR = {
     transparent: "transparent",
     green: "green",
     red: "red"
-}
+};
 
 export const DISTANCE = {
     selfEdgeText: 13,
@@ -134,18 +141,36 @@ function changeTextSize(event) {
 
 function handleKeyEvent(event) {
     if (!event.code) return;
+    event.preventDefault();
 
-    if (!KEYS.control && event.code.startsWith("Key")) {
-        focusDescription(event);
+    // check mode change
+    if (KEYS.control) {
+        ACTION.mode = (event.code === "Digit1" || event.code === "Numpad1") ? MODES.edit : ACTION.mode;
+        ACTION.mode = (event.code === "Digit2" || event.code === "Numpad2") ? MODES.add : ACTION.mode;
+        ACTION.mode = (event.code === "Digit3" || event.code === "Numpad3") ? MODES.write : ACTION.mode;
+        console.log(ACTION.mode);
+
         return;
     }
 
-    // the letter-keys here are always combined with CTRL
-    switch (event.code) {
-        case "KeyA":
-            event.preventDefault();
-            addNode();
+    // edit mode has no specific key settings
+    switch (ACTION.mode) {
+        case MODES.add:
+            handleKeyAddMode(event);
             break;
+        case MODES.write:
+            if (!ACTION.typing) {
+                focusDescription(event);
+            }
+            break;
+        case MODES.edit:
+            break;
+        default:
+            console.error("Unknown mode occured");
+    }
+
+    // key settings for all modes
+    switch (event.code) {
         case "ShiftRight":
         case "ShiftLeft":
             KEYS.shift = true;
@@ -162,21 +187,37 @@ function handleKeyEvent(event) {
         case "Backspace":
             removeElement();
             break;
-        case "KeyS":
-            toggleNodeAttribute(true, CONSTANTS.start);
-            break;
-        case "KeyE":
-            toggleNodeAttribute(true, CONSTANTS.end);
-            break;
         default:
         // debug only
         //console.log(event.code);
     }
 }
 
+function handleKeyAddMode(event) {
+    switch (event.code) {
+        case "KeyA":
+            addNode();
+            break;
+        case "KeyS":
+            toggleNodeAttribute(true, CONSTANTS.start);
+            break;
+        case "KeyE":
+            toggleNodeAttribute(true, CONSTANTS.end);
+            break;
+    }
+}
+
 function handleKeyUpEvent(event) {
-    KEYS.control = false;
-    KEYS.shift = false;
+    switch (event.code) {
+        case "ShiftRight":
+        case "ShiftLeft":
+            KEYS.shift = false;
+            break;
+        case "ControlLeft":
+        case "ControlRight":
+            KEYS.control = false;
+            break
+    }
 }
 
 function focusDescription(event) {
