@@ -84,7 +84,7 @@ export function reset() {
 }
 
 function initGrid() {
-    const container = builder.createContainer(svg, "gridContainer");
+    const container = builder.createContainer(svg, "grid-container");
     const color = ACTION.showGrid ? COLOR.grid : COLOR.transparent;
 
     for (let i = 0; i <= 100; i += SIZE.grid) {
@@ -216,7 +216,7 @@ export function resetConfigurationView() {
 }
 
 export function toggleGridView(show) {
-    const gridContainer = document.getElementById("gridContainer");
+    const gridContainer = document.getElementById("grid-container");
     const color = show ? COLOR.grid : COLOR.transparent;
     
     for (let child of gridContainer.childNodes) {
@@ -349,4 +349,9 @@ export function correctSubTexts(desc, coords, textNode) {
         updateAttributes(child, { x: coords.x, y: offset });
         offset += distance;
     }
+}
+
+export function updateModeText(text) {
+    const modeText = `${text}-mode`;
+    document.getElementById("mode-overlay").textContent = modeText;
 }

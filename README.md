@@ -9,7 +9,6 @@ In general, NFAs, DFAs and TMs should be supported.
 
 ## TODO: 
 - Fix css mess!
-- Better input handling
 - update usage (use modes? add, edit)
 
 ## Bugs

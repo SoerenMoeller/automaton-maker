@@ -15,24 +15,24 @@
 </head>
 
 <body>
-  <main>
+  <main class="center">
     <div id="top">
-      <button id="addButton">add node</button>
+      <button id="add-button">add node</button>
       <div class="flow-right"></div>
     </div>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"></svg>
     <div id="bottom">
-      <div id="actionContainer">
-        <a id="downloadButton">Download</a>
-        <button id="convertButton">Convert</button>
-        <select id="selectedSize" name="selectedSize">
+      <div id="action-container">
+        <a id="download-button">Download</a>
+        <button id="convert-button">Convert</button>
+        <select id="selected-size" name="selected-size">
           <option value="small">Small</option>
           <option value="medium" selected>Medium</option>
           <option value="big">Big</option>
         </select>
-        <input type="number" id="textSize" name="textSize" min="1.5" max="5" step="0.125" value="2.5">
+        <input type="number" id="text-size" name="text-size" min="1.5" max="5" step="0.125" value="2.5">
       </div>
-      <div id="resetContainer">
+      <div id="reset-container">
         <p>Reset</p>
         <div id="img-container" class="center">
           <img src="img/reload.svg" alt="reload_img">
@@ -45,7 +45,7 @@
     <div>
       <div id="copy-header">
         <h3>LaTeX Code:</h3>
-        <button id="copyButton">Copy</button>
+        <button id="copy-button">Copy</button>
       </div>
       <p id="copy-container"></p>
     </div>

@@ -3,12 +3,15 @@
     --option-width: 6rem;
     --svg-size: 80vmin;
     --gap: 1rem;
-    --border-rad: 0.25rem;
+    --border-rad: 0.175rem;
 
-    --dark-blue: #5680E9;
-    --blue: #5AB9EA;
+    --dark-blue: hsl(223, 77%, 63%);
+    --dark-blue-hover: hsl(223, 77%, 55%);
+    --blue: hsl(200, 77%, 64%);
+    --blue-hover: hsl(200, 77%, 55%);
     --light-blue: #84CEEB;
-    --grey: #C1C8E4;
+    --grey: hsl(228, 39%, 83%);
+    --light-grey: hsl(228, 39%, 98%);
     --purple: #8860D0;
 }
 
@@ -19,8 +22,8 @@ html {
 }
 
 body {
-    background: var(--grey);
-    background: radial-gradient(circle, var(--grey) 40%, var(--light-blue) 100%);
+    background-color: var(--grey);
+    background-image: radial-gradient(circle, var(--grey) 40%, var(--light-blue) 100%);
 }
 
 h3 {
@@ -32,11 +35,6 @@ main {
     height: 100%;
 
     padding: 5vh;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
     flex-direction: column;
 }
 
@@ -46,7 +44,7 @@ svg {
     width: var(--svg-size);
     height: var(--svg-size);
 
-    background-color: rgb(235, 235, 235);
+    background-color: var(--light-grey);
     border: 1px solid var(--purple);
     border-radius: var(--border-rad);
 
@@ -64,9 +62,13 @@ svg {
     width: var(--option-height);
 
     margin-left: 0.5rem;
-    background-color: #88FA76;
+    background-color: var(--blue);
     border: 1px solid black;
     border-radius: var(--border-rad);
+}
+
+#img-container:hover {
+    background-color: var(--blue-hover);
 }
 
 #img-container > img {
@@ -123,30 +125,11 @@ a {
     cursor: pointer;
 }
 
-.red {
-    background-color: #F56666;
-    border-color: #DB1111;
-}
-
-.red:active, .red:hover {
-    background-color: #E65858;
-}
-
-.green {
-    background-color: #88FA76;
-    border-color: #43AD32;
-}
-
-.green:active, .green:hover {
-    background-color: #8EF27F;
-}
-
-.no-border-radius {
-    border-radius: 0;
-}
-
-.border-radius-right {
-    border-radius: 0 var(--border-rad) var(--border-rad) 0;
+button:active,
+a:active,
+button:hover,
+a:hover {
+    background-color: var(--dark-blue-hover);
 }
 
 select {
@@ -154,27 +137,14 @@ select {
     height: var(--option-height);
 }
 
-.smallButton {
-    height: var(--option-height);
-    width: var(--option-height);
-    min-width: var(--option-height);
-}
-
-
-button:active,
-a:active,
-button:hover,
-a:hover {
-    background-color: #354E87;
-}
-
-#removeButton {
+#remove-button {
     margin-left: var(--gap);
+    background-color: var(--blue);
 }
 
-#removeButton:active,
-#removeButton:hover {
-    background-color: #e65858;
+#remove-button:active,
+#remove-button:hover {
+    background-color: var(--blue-hover);
 }
 
 #top,
@@ -192,7 +162,7 @@ a:hover {
     justify-content: space-between;
 }
 
-#resetContainer {
+#reset-container {
     display: flex;
     align-items: center;
 
@@ -222,7 +192,7 @@ a:hover {
     height: 100%;
 }
 
-#actionContainer {
+#action-container {
     display: flex;
     gap: var(--gap);
     width: 100%;

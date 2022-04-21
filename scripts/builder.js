@@ -156,7 +156,7 @@ export function createTextNode(parent, position, text, draggable) {
 }
 
 export function createRemoveButton(parent, text) {
-    const button = createDOMElement(parent, "button", { id: "removeButton" });
+    const button = createDOMElement(parent, "button", { id: "remove-button" });
     button.textContent = text;
 
     return button;

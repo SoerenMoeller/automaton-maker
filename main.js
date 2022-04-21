@@ -20,8 +20,7 @@ const THRESHOLDS = {
 
 const MODES = {
     write: "write",
-    edit: "edit",
-    add: "add"
+    edit: "edit"
 };
 
 export const ACTION = {
@@ -37,7 +36,6 @@ export const ACTION = {
 export const COLOR = {
     black: "black",
     grid: "rgba(224, 128, 31, 0.3)",
-    marked: "#34ebeb",
     transparent: "transparent",
     green: "green",
     red: "red"
@@ -103,6 +101,11 @@ model.setGraph({
 });
 
 function main() {
+    // sync some colors with css
+    const style = getComputedStyle(document.documentElement);
+    COLOR.marked = style.getPropertyValue("--blue");
+    console.log(COLOR.marked);
+
     // find the svg to draw in
     const svg = view.init(model.getGraph());
     svg.addEventListener("load", makeDraggable);
@@ -110,13 +113,13 @@ function main() {
     document.addEventListener("keydown", handleKeyEvent);
     document.addEventListener("keyup", handleKeyUpEvent);
 
-    const resetButton = document.getElementById("resetContainer");
+    const resetButton = document.getElementById("reset-container");
     const downloadButton = document.getElementsByTagName("a")[0];
-    const addButton = document.getElementById("addButton");
-    const convertButton = document.getElementById("convertButton");
-    const copyButton = document.getElementById("copyButton");
+    const addButton = document.getElementById("add-button");
+    const convertButton = document.getElementById("convert-button");
+    const copyButton = document.getElementById("copy-button");
     const overlay = document.getElementById("overlay");
-    const sizeSelection = document.getElementById("selectedSize");
+    const sizeSelection = document.getElementById("selected-size");
     const textSizeSelection = document.getElementsByTagName("input")[0];
 
     resetButton.addEventListener("click", e => resetAll());
@@ -141,29 +144,25 @@ function changeTextSize(event) {
 
 function handleKeyEvent(event) {
     if (!event.code) return;
-    event.preventDefault();
 
     // check mode change
     if (KEYS.control) {
         ACTION.mode = (event.code === "Digit1" || event.code === "Numpad1") ? MODES.edit : ACTION.mode;
-        ACTION.mode = (event.code === "Digit2" || event.code === "Numpad2") ? MODES.add : ACTION.mode;
-        ACTION.mode = (event.code === "Digit3" || event.code === "Numpad3") ? MODES.write : ACTION.mode;
-        console.log(ACTION.mode);
+        ACTION.mode = (event.code === "Digit2" || event.code === "Numpad2") ? MODES.write : ACTION.mode;
+        view.updateModeText(ACTION.mode);
 
         return;
     }
 
     // edit mode has no specific key settings
     switch (ACTION.mode) {
-        case MODES.add:
+        case MODES.edit:
             handleKeyAddMode(event);
             break;
         case MODES.write:
             if (!ACTION.typing) {
                 focusDescription(event);
             }
-            break;
-        case MODES.edit:
             break;
         default:
             console.error("Unknown mode occured");
