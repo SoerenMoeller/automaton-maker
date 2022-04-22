@@ -156,7 +156,7 @@ function handleKeyEvent(event) {
         return;
     }
 
-    // edit mode has no specific key settings
+    // mode specific key settings
     switch (ACTION.mode) {
         case MODES.edit:
             handleKeyEditMode(event);
