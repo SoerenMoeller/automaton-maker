@@ -375,7 +375,7 @@ function selectNode(elem) {
     const nodeId = view.getIdOfNode(elem);
     view.setNodeColor(nodeId, COLOR.marked);
 
-    if (KEYS.control) {
+    if (KEYS.control && ACTION.mode === MODES.edit) {
         startDrawing(nodeId);
     }
 
