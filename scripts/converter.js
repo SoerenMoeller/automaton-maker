@@ -168,7 +168,7 @@ function convertEdge(nodeId, graph) {
         if (edge.desc.length !== 0) {
             edgeTex += `, ${getEdgeTextPosition(nodeId, otherId, graph)}`;
         }
-        edgeTex += "];"
+        edgeTex += "] "
 
         edgeTex += `{${parseTextToLaTeX(edge.desc)}} (${otherId})\n`;
 
@@ -335,7 +335,19 @@ function parseTextToLaTeX(input) {
 
     let output = "";
     for (let parsedLine of parsed) {
-        output += `$${parsedLine.text}_{${parsedLine.sub}}^{${parsedLine.super}}$`;
+        output += `$${parsedLine.text}`;
+        if (parsedLine.sub && parsedLine.sub.length !== 0) {
+            output += `_{${parsedLine.sub}}`;
+        }
+        if (parsedLine.super && parsedLine.super.length !== 0) {
+            output += `^{${parsedLine.super}}`;
+        }
+        output += "$\\\\"
+    }
+
+    // remove last line break
+    if (parsed.length !== 0) {
+        output = output.slice(0, -2);
     }
 
     return output;
