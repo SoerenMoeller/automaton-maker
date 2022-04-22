@@ -17,7 +17,7 @@
 
 html {
     font-family: 'Open Sans', sans-serif;
-    font-size: min(100%, 2vw);
+    font-size: min(100%, 2vw, 2vh);
     font-weight: 100;
 }
 
