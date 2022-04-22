@@ -165,7 +165,7 @@ export function createRemoveButton(parent, text) {
 export function createDescriptionContainer(parent) {
     const container = createContainerWithText(parent, "Description", "full-width");
 
-    createInputForm(container, CONSTANTS.text, "descriptionTextInput");
+    createInputForm(container, CONSTANTS.text, "description-text-input");
 
     return container;
 }

@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", main);
 const KEYS = {
     control: false,
     shift: false
-}
+};
 
 const THRESHOLDS = {
     straightEdge: 2,
@@ -23,12 +23,15 @@ const MODES = {
     edit: "edit"
 };
 
+const CACHE = {
+    mode: MODES.edit
+}
+
 export const ACTION = {
     draw: false,
     selectedDragElement: null,
     selectedElement: null,
     drawStartNodeId: -1,
-    typing: false,
     showGrid: false,
     mode: MODES.edit
 };
@@ -104,7 +107,6 @@ function main() {
     // sync some colors with css
     const style = getComputedStyle(document.documentElement);
     COLOR.marked = style.getPropertyValue("--blue");
-    console.log(COLOR.marked);
 
     // find the svg to draw in
     const svg = view.init(model.getGraph());
@@ -145,8 +147,8 @@ function changeTextSize(event) {
 function handleKeyEvent(event) {
     if (!event.code) return;
 
-    // check mode change
-    if (KEYS.control) {
+    // check mode change; TODO check if focus on desc
+    if (KEYS.control && !view.isDescriptionFocus()) {
         ACTION.mode = (event.code === "Digit1" || event.code === "Numpad1") ? MODES.edit : ACTION.mode;
         ACTION.mode = (event.code === "Digit2" || event.code === "Numpad2") ? MODES.write : ACTION.mode;
         view.updateModeText(ACTION.mode);
@@ -157,12 +159,10 @@ function handleKeyEvent(event) {
     // edit mode has no specific key settings
     switch (ACTION.mode) {
         case MODES.edit:
-            handleKeyAddMode(event);
+            handleKeyEditMode(event);
             break;
         case MODES.write:
-            if (!ACTION.typing) {
-                focusDescription(event);
-            }
+            focusDescription(event);
             break;
         default:
             console.error("Unknown mode occured");
@@ -183,7 +183,6 @@ function handleKeyEvent(event) {
             unselectAll();
             break;
         case "Delete":
-        case "Backspace":
             removeElement();
             break;
         default:
@@ -192,7 +191,7 @@ function handleKeyEvent(event) {
     }
 }
 
-function handleKeyAddMode(event) {
+function handleKeyEditMode(event) {
     switch (event.code) {
         case "KeyA":
             addNode();
@@ -202,6 +201,9 @@ function handleKeyAddMode(event) {
             break;
         case "KeyE":
             toggleNodeAttribute(true, CONSTANTS.end);
+            break;
+        case "Backspace":
+            removeElement();
             break;
     }
 }
@@ -220,7 +222,7 @@ function handleKeyUpEvent(event) {
 }
 
 function focusDescription(event) {
-    const descriptionTextInput = document.getElementById("descriptionTextInput");
+    const descriptionTextInput = document.getElementById("description-text-input");
     if (!descriptionTextInput) return;
 
     descriptionTextInput.focus();
@@ -296,8 +298,8 @@ function initEdgeConfiguration(ids) {
 
     // add events for change 
     elements.removeButton.addEventListener("click", evt => removeElement());
-    elements.textDescription.addEventListener("focusin", evt => ACTION.typing = true);
-    elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    elements.textDescription.addEventListener("focusin", evt => focusTextInput());
+    elements.textDescription.addEventListener("focusout", evt => unfocusTextInput());
     elements.textDescription.addEventListener("input", evt => {
         evt.preventDefault();
         model.setEdgeDescription(ids.from, ids.to, elements.textDescription.value);
@@ -319,8 +321,8 @@ function initNodeConfiguration(nodeId) {
     elements.removeButton.addEventListener("click", evt => removeElement());
     elements.checkBoxEnd.addEventListener("click", evt => toggleNodeAttribute(false, CONSTANTS.end));
     elements.checkBoxStart.addEventListener("click", evt => toggleNodeAttribute(false, CONSTANTS.start));
-    elements.textDescription.addEventListener("focusin", evt => ACTION.typing = true);
-    elements.textDescription.addEventListener("focusout", evt => ACTION.typing = false);
+    elements.textDescription.addEventListener("focusin", evt => focusTextInput());
+    elements.textDescription.addEventListener("focusout", evt => unfocusTextInput());
     elements.textDescription.addEventListener("input", evt => {
         evt.preventDefault();
 
@@ -328,6 +330,19 @@ function initNodeConfiguration(nodeId) {
         model.setNodeDescription(nodeId, elements.textDescription.value);
         view.build();
     });
+}
+
+function focusTextInput() {
+    CACHE.mode = ACTION.mode;
+    ACTION.mode = MODES.write;
+
+    view.updateModeText(ACTION.mode);
+}
+
+function unfocusTextInput() {
+    ACTION.mode = CACHE.mode;
+
+    view.updateModeText(ACTION.mode);
 }
 
 function toggleNodeAttribute(changeView, attribute) {
@@ -404,7 +419,6 @@ function removeNode() {
 
 function unselectAll() {
     ACTION.selectedElement = null;
-    ACTION.typing = false;
 
     view.resetConfigurationView();
     view.unmarkAll(model.getGraph());

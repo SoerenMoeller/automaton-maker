@@ -355,3 +355,10 @@ export function updateModeText(text) {
     const modeText = `${text}-mode`;
     document.getElementById("mode-overlay").textContent = modeText;
 }
+
+export function isDescriptionFocus() {
+    const elem = document.getElementById("description-text-input");
+    if (!elem) return false;
+
+    return elem === document.activeElement;
+}
