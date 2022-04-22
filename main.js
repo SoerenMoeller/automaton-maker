@@ -1,4 +1,5 @@
 import { convertToLaTeX } from './scripts/converter.js';
+import { CONSTANTS, THRESHOLDS, MODES, COLOR, DISTANCE, SIZE } from './scripts/constants.js';
 import * as model from './scripts/model.js';
 import * as view from './scripts/view.js'
 import * as vector from './scripts/vectors.js';
@@ -12,20 +13,9 @@ const KEYS = {
     shift: false
 };
 
-const THRESHOLDS = {
-    straightEdge: 2,
-    angle: 15,
-    text: 1
-};
-
-const MODES = {
-    write: "write",
-    edit: "edit"
-};
-
 const CACHE = {
     mode: MODES.edit
-}
+};
 
 export const ACTION = {
     draw: false,
@@ -35,73 +25,6 @@ export const ACTION = {
     showGrid: false,
     mode: MODES.edit
 };
-
-export const COLOR = {
-    black: "black",
-    grid: "rgba(224, 128, 31, 0.3)",
-    transparent: "transparent",
-    green: "green",
-    red: "red"
-};
-
-export const DISTANCE = {
-    selfEdgeText: 13,
-    startEdge: 7
-};
-
-export const SIZE = {
-    text: 2.5,
-    subText: 1.5,
-    nodeRadius: 4,
-    grid: 4
-};
-
-export const CONSTANTS = {
-    path: "path",
-    circle: "circle",
-    text: "text",
-    node: "node",
-    polygon: "polygon",
-    defs: "defs",
-    style: "style",
-    start: "start",
-    end: "end",
-    marker: "marker",
-    defaultMarker: "defaultMarker",
-    defaultPath: "defaultPath",
-    arrow: "arrow",
-    selfarrow: "selfarrow",
-    arrowSelected: "arrowSelected",
-    selfarrowSelected: "selfarrowSelected",
-    draggable: "draggable",
-    g: "g",
-    tspan: "tspan",
-    sub: "sub",
-    super: "super",
-    none: "none",
-    white: "white",
-    transparent: "transparent",
-    markerEnd: "marker-end",
-    id: "id",
-    class: "class",
-    stroke: "stroke",
-    middle: "middle",
-    central: "central",
-    select: "select",
-    option: "option"
-}
-
-model.setGraph({
-    0: {
-        desc: ["q_end^hallo", "q_hi^htart"],
-        to: [],
-        attributes: [],
-        coords: {
-            x: 10,
-            y: 10
-        }
-    }
-});
 
 function main() {
     // sync some colors with css
@@ -149,6 +72,8 @@ function handleKeyEvent(event) {
 
     // check mode change; TODO check if focus on desc
     if (KEYS.control && !view.isDescriptionFocus()) {
+        event.preventDefault();
+
         ACTION.mode = (event.code === "Digit1" || event.code === "Numpad1") ? MODES.edit : ACTION.mode;
         ACTION.mode = (event.code === "Digit2" || event.code === "Numpad2") ? MODES.write : ACTION.mode;
         view.updateModeText(ACTION.mode);
@@ -173,7 +98,6 @@ function handleKeyEvent(event) {
         case "ShiftRight":
         case "ShiftLeft":
             KEYS.shift = true;
-            toggleGridView();
             break;
         case "ControlLeft":
         case "ControlRight":
@@ -204,6 +128,10 @@ function handleKeyEditMode(event) {
             break;
         case "Backspace":
             removeElement();
+            break;
+        case "ShiftRight":
+        case "ShiftLeft":
+            toggleGridView();
             break;
     }
 }

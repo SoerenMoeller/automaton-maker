@@ -2,7 +2,8 @@ import * as builder from './builder.js';
 import * as vector from './vectors.js';
 import * as model from './model.js';
 import { parseText } from './converter.js';
-import { SIZE, CONSTANTS, COLOR, DISTANCE, ACTION } from '../main.js';
+import { CONSTANTS, COLOR, DISTANCE, SIZE } from './constants.js';
+import { ACTION } from '../main.js';
 
 "use strict";
 

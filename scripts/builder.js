@@ -1,4 +1,4 @@
-import { SIZE, CONSTANTS, COLOR, DISTANCE } from '../main.js';
+import { CONSTANTS, COLOR, SIZE } from './constants.js';
 import { parseText } from './converter.js';
 
 "use strict";

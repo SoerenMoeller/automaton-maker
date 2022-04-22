@@ -1,4 +1,4 @@
-import { CONSTANTS } from "../main.js";
+import { CONSTANTS } from './constants.js';
 import { parseInputToArray } from "./converter.js";
 
 "use strict";
