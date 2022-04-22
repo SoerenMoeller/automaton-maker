@@ -4,7 +4,7 @@ This tool can be used to plot an automaton.
 In general, NFAs, DFAs and TMs should be supported. 
 
 ## Usage
-There are to modes to edit and build the graph.  
+There are two modes to edit and build the graph.  
 The **edit**-mode to create elements and the **write**-mode to change the labels of the elements. The key-settings in theses modes are described in the following.
 
 ### General
