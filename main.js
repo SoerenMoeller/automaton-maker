@@ -577,7 +577,7 @@ function dragSelfEdge(coord) {
 
     let angle = vector.getAngle360Degree(node.coords, coord);
     if (ACTION.showGrid) {
-        angle = getClosestStep(angle, THRESHOLDS.angle);
+        angle = snap(angle, THRESHOLDS.angle);
     }
     model.setEdgeAngle(nodeId, angle);
 
